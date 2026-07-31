@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Requests from './pages/Requests';
 import Accounts from './pages/Accounts';
+import ChangePassword from './pages/ChangePassword';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,6 +36,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/accounts" element={<Accounts />} />
+            <Route path="/settings" element={<ChangePassword />} />
           </Route>
         </Route>
       </Routes>

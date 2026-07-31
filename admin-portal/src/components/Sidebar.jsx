@@ -6,7 +6,7 @@ const Sidebar = () => {
   const links = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Requests', path: '/requests', icon: Inbox },
-    { name: 'Accounts', path: '/accounts', icon: Users },
+    { name: 'Internal Users', path: '/accounts', icon: Users },
   ];
 
   return (
@@ -38,10 +38,15 @@ const Sidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center px-4 py-3 text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-gray-800">
+        <NavLink to="/settings" className={({ isActive }) => clsx(
+          "flex items-center px-4 py-3 text-sm font-medium transition-colors cursor-pointer rounded-lg",
+          isActive 
+            ? "bg-gray-800 text-white" 
+            : "text-gray-400 hover:text-white hover:bg-gray-800"
+        )}>
           <Settings className="mr-3 h-5 w-5" />
-          Settings
-        </div>
+          Change Password
+        </NavLink>
       </div>
     </div>
   );

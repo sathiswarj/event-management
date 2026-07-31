@@ -3,11 +3,16 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Search, Filter, MoreVertical, X, Check, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Requests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  
+  // Action Modal State
+  const [actionModal, setActionModal] = useState({ show: false, request: null, status: '', message: '' });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -24,15 +29,38 @@ const Requests = () => {
     }
   };
 
-  const updateStatus = async (id, status) => {
+  const confirmAction = (req, status) => {
+    setActionModal({ show: true, request: req, status, message: '' });
+  };
+
+  const submitUpdateStatus = async () => {
+    setIsUpdating(true);
     try {
-      await axios.put(`http://localhost:5000/api/requests/${id}/status`, { status }, { withCredentials: true });
+      await axios.put(`http://localhost:5000/api/requests/${actionModal.request._id}`, { 
+        status: actionModal.status, 
+        adminNotes: actionModal.message 
+      }, { withCredentials: true });
+      
+      toast.success(`Request ${actionModal.status} successfully`);
+      setActionModal({ show: false, request: null, status: '', message: '' });
+      setSelectedRequest(null);
       fetchRequests();
-      if (selectedRequest && selectedRequest._id === id) {
-        setSelectedRequest({ ...selectedRequest, status });
-      }
     } catch (error) {
       console.error('Failed to update status', error);
+      toast.error('Failed to update request');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updateStatusSimple = async (id, status) => {
+    try {
+      await axios.put(`http://localhost:5000/api/requests/${id}`, { status }, { withCredentials: true });
+      toast.success(`Status updated to ${status}`);
+      setSelectedRequest(null);
+      fetchRequests();
+    } catch (error) {
+      toast.error('Failed to update request');
     }
   };
 
@@ -172,6 +200,15 @@ const Requests = () => {
                     <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{selectedRequest.description}</p>
                   </div>
                 </div>
+
+                {selectedRequest.adminNotes && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Admin Feedback</h4>
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                      <p className="text-amber-900 text-sm italic">{selectedRequest.adminNotes}</p>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Submission Date</h4>
@@ -184,14 +221,14 @@ const Requests = () => {
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 text-center">Update Status</p>
               <div className="grid grid-cols-2 gap-3">
                 <button 
-                  onClick={() => updateStatus(selectedRequest._id, 'Approved')}
+                  onClick={() => confirmAction(selectedRequest, 'Approved')}
                   className="flex items-center justify-center py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors shadow-sm"
                 >
                   <Check className="w-4 h-4 mr-2" />
                   Approve
                 </button>
                 <button 
-                  onClick={() => updateStatus(selectedRequest._id, 'Rejected')}
+                  onClick={() => confirmAction(selectedRequest, 'Rejected')}
                   className="flex items-center justify-center py-3 bg-white border border-gray-200 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors shadow-sm"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
@@ -199,10 +236,62 @@ const Requests = () => {
                 </button>
               </div>
               <button 
-                onClick={() => updateStatus(selectedRequest._id, 'Completed')}
+                onClick={() => updateStatusSimple(selectedRequest._id, 'Completed')}
                 className="w-full flex items-center justify-center py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold transition-colors shadow-sm mt-2"
               >
                 Mark as Completed
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Action Message Modal */}
+      {actionModal.show && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setActionModal({ ...actionModal, show: false })} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Confirm {actionModal.status}
+              </h3>
+              <button onClick={() => setActionModal({ ...actionModal, show: false })} className="text-gray-400 hover:text-gray-900">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-4">
+              You are about to mark this request as <strong className="text-gray-900">{actionModal.status}</strong>. 
+              Would you like to include an internal note or a message?
+            </p>
+
+            <textarea
+              rows="4"
+              placeholder={`Enter reason for ${actionModal.status.toLowerCase()}... (Optional)`}
+              value={actionModal.message}
+              onChange={(e) => setActionModal({ ...actionModal, message: e.target.value })}
+              className="w-full p-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm resize-none mb-6"
+            ></textarea>
+
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setActionModal({ ...actionModal, show: false })}
+                className="px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitUpdateStatus}
+                disabled={isUpdating}
+                className={`px-4 py-2 font-bold text-white rounded-lg transition-colors shadow-sm ${
+                  actionModal.status === 'Approved' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                {isUpdating ? 'Saving...' : `Confirm ${actionModal.status}`}
               </button>
             </div>
           </motion.div>
