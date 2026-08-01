@@ -64,11 +64,21 @@ const Requests = () => {
     }
   };
 
+  const getAdminLabel = (status) => {
+    switch (status) {
+      case 'New': return 'New Inquiry';
+      case 'In Review': return 'Curatorial Review';
+      case 'Approved': return 'Allocate & Approve';
+      case 'Rejected': return 'Date Unavailable';
+      default: return status;
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Pending': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'New': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'In Review': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Approved': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'Completed': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -134,7 +144,7 @@ const Requests = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(req.status)}`}>
-                        {req.status}
+                        {getAdminLabel(req.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -173,7 +183,7 @@ const Requests = () => {
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedRequest.title}</h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold border inline-block ${getStatusColor(selectedRequest.status)}`}>
-                    {selectedRequest.status}
+                    {getAdminLabel(selectedRequest.status)}
                   </span>
                 </div>
               </div>
@@ -236,10 +246,10 @@ const Requests = () => {
                 </button>
               </div>
               <button 
-                onClick={() => updateStatusSimple(selectedRequest._id, 'Completed')}
+                onClick={() => updateStatusSimple(selectedRequest._id, 'In Review')}
                 className="w-full flex items-center justify-center py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold transition-colors shadow-sm mt-2"
               >
-                Mark as Completed
+                Mark as In Review
               </button>
             </div>
           </motion.div>
