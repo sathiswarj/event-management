@@ -31,10 +31,7 @@ const requestSchema = new mongoose.Schema({
     customerEmail: {
         type: String,
         required: [true, 'Please add your email'],
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Please add a valid email'
-        ]
+
     },
     customerPhone: {
         type: String,
@@ -52,7 +49,7 @@ const requestSchema = new mongoose.Schema({
     timestamps: true
 });
 
-requestSchema.pre('save', function(next) {
+requestSchema.pre('save', function (next) {
     if (!this.requestId) {
         // Generate a random 6-digit ID like REQ-123456
         this.requestId = 'REQ-' + Math.floor(100000 + Math.random() * 900000);

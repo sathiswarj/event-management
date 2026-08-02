@@ -1,4 +1,5 @@
 import Request from '../models/Request.js';
+import axios from 'axios';
 
 // @desc    Create a request
 // @route   POST /api/requests
@@ -16,6 +17,30 @@ export const createRequest = async (req, res, next) => {
             customerPhone,
             eventDate
         });
+
+        // n8n Webhook Integration
+        // Best practice: Run this asynchronously and catch errors so it doesn't block or fail the primary API response
+        try {
+            const webhookUrl = process.env.N8N_WEBHOOK_URL;
+            if (webhookUrl) {
+                const payload = {
+                    requestId: request.requestId || request._id,
+                    customerName: request.customerName,
+                    customerEmail: request.customerEmail,
+                    customerPhone: request.customerPhone,
+                    eventType: request.title,
+                    description: request.description,
+                    eventDate: request.eventDate,
+                    status: 'New'
+                };
+
+                // Fire and forget, but await so we can log immediate errors if needed
+                await axios.post(webhookUrl, payload);
+            }
+        } catch (webhookError) {
+            console.error('Failed to send webhook to n8n:', webhookError.message);
+            // We DO NOT throw the error here because the database operation already succeeded.
+        }
 
         res.status(201).json(request);
     } catch (error) {
@@ -41,12 +66,12 @@ export const getRequests = async (req, res, next) => {
 export const getRequestById = async (req, res, next) => {
     try {
         const id = req.params.id;
-        
+
         // Find by _id (if valid ObjectId) or by requestId
-        const query = id.match(/^[0-9a-fA-F]{24}$/) 
+        const query = id.match(/^[0-9a-fA-F]{24}$/)
             ? { $or: [{ _id: id }, { requestId: id }] }
             : { requestId: id };
-            
+
         const request = await Request.findOne(query).populate('category', 'name');
 
         if (request) {
@@ -66,7 +91,7 @@ export const getRequestById = async (req, res, next) => {
 export const updateRequest = async (req, res, next) => {
     try {
         const { status, adminNotes } = req.body;
-        
+
         const updateData = {};
         if (status) updateData.status = status;
         if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
@@ -131,7 +156,7 @@ export const getStats = async (req, res, next) => {
 
         // Aggregate by category
         const categoryCounts = await Request.aggregate([
-            { 
+            {
                 $lookup: {
                     from: 'categories',
                     localField: 'category',
@@ -168,11 +193,11 @@ export const getStats = async (req, res, next) => {
         ]);
 
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
+
         // Fill all 12 months with 0 if no data, up to current month
         const currentMonth = new Date().getMonth() + 1;
         const trendData = [];
-        
+
         for (let i = 1; i <= currentMonth; i++) {
             const m = monthCounts.find(m => m._id === i);
             trendData.push({
