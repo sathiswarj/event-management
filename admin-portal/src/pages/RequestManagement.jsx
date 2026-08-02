@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { logout, reset } from '../features/auth/authSlice';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { Copy } from 'lucide-react';
+import { API_BASE_URL } from '../services/api';
 
 const RequestManagement = () => {
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ const RequestManagement = () => {
         const config = {
           withCredentials: true,
         };
-        const res = await axios.get('http://localhost:5000/api/requests', config);
+        const res = await axios.get(`${API_BASE_URL}/requests`, config);
         setRequests(res.data);
         setLoading(false);
       } catch (error) {
@@ -42,7 +44,7 @@ const RequestManagement = () => {
   const onLogout = () => {
     dispatch(logout());
     dispatch(reset());
-    navigate('/login');
+    navigate('/login`);
   };
 
   const handleStatusChange = async (id, newStatus) => {
@@ -50,9 +52,9 @@ const RequestManagement = () => {
       const config = {
         withCredentials: true,
       };
-      await axios.put(`http://localhost:5000/api/requests/${id}`, { status: newStatus }, config);
+      await axios.put(`${API_BASE_URL}/requests/${id}`, { status: newStatus }, config);
       setRequests((prev) => prev.map((req) => req._id === id ? { ...req, status: newStatus } : req));
-      toast.success('Status updated');
+      toast.success(`Status updated');
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -94,6 +96,16 @@ const RequestManagement = () => {
                   <li key={req._id}>
                     <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                       <div className="flex flex-col">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <p className="text-sm font-medium text-gray-900">ID: {req.requestId || req._id.substring(0, 8)}</p>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(req.requestId || req._id.substring(0, 8)); toast.success('ID copied to clipboard'); }}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Copy ID"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
                         <p className="text-sm font-medium text-blue-600 truncate">{req.title}</p>
                         <p className="text-sm text-gray-500 mt-1">From: {req.customerName} ({req.customerEmail})</p>
                       </div>
@@ -106,16 +118,20 @@ const RequestManagement = () => {
                           {req.status}
                         </span>
                         
-                        <select 
-                          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-gray-50"
-                          value={req.status}
-                          onChange={(e) => handleStatusChange(req._id, e.target.value)}
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Resolved">Resolved</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
+                        {req.status !== 'Approved' && req.status !== 'Rejected' ? (
+                          <select 
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-gray-50"
+                            value={req.status}
+                            onChange={(e) => handleStatusChange(req._id, e.target.value)}
+                          >
+                            <option value="New">New</option>
+                            <option value="In Review">In Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        ) : (
+                          <span className="text-sm font-medium text-gray-500">Status final</span>
+                        )}
                       </div>
                     </div>
                   </li>

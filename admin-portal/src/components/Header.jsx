@@ -1,13 +1,14 @@
 import { Bell, LogOut, Search } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../services/api';
 
 const Header = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/admin/auth/logout', {}, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/admin/auth/logout`, {}, { withCredentials: true });
       localStorage.removeItem('adminInfo');
       setIsAuthenticated(false);
       navigate('/login');

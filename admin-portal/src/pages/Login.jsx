@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { LogIn } from 'lucide-react';
+import { API_BASE_URL } from '../services/api';
 
 const Login = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ const Login = ({ setIsAuthenticated }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/admin/auth/login', { email, password }, { withCredentials: true });
+      const res = await axios.post(`${API_BASE_URL}/admin/auth/login`, { email, password }, { withCredentials: true });
       localStorage.setItem('adminInfo', JSON.stringify(res.data));
       setIsAuthenticated(true);
       toast.success('Logged in successfully');

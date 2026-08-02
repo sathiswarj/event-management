@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Shield, UserPlus, Lock, X, Phone, Mail, User, Copy, Check, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../services/api';
 
 const Accounts = () => {
   const [admins, setAdmins] = useState([]);
@@ -20,7 +21,7 @@ const Accounts = () => {
 
   const fetchAdmins = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/auth/users', { withCredentials: true });
+      const res = await axios.get(`${API_BASE_URL}/admin/auth/users`, { withCredentials: true });
       setAdmins(res.data);
     } catch (error) {
       console.error('Failed to fetch admins', error);
@@ -63,7 +64,7 @@ const Accounts = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/admin/auth/register', newAdmin, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/admin/auth/register`, newAdmin, { withCredentials: true });
       toast.success('New user created successfully');
       setShowModal(false);
       setNewAdmin({ name: '', email: '', phone: '', password: '' });
@@ -79,13 +80,13 @@ const Accounts = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`http://localhost:5000/api/admin/auth/users/${editAdmin.id}`, {
+      await axios.put(`${API_BASE_URL}/admin/auth/users/${editAdmin.id}`, {
         name: editAdmin.name,
         email: editAdmin.email,
         phone: editAdmin.phone,
         isActive: editAdmin.isActive
       }, { withCredentials: true });
-      
+
       toast.success('User updated successfully');
       setShowEditModal(false);
       fetchAdmins();
@@ -114,7 +115,7 @@ const Accounts = () => {
           <Shield className="w-5 h-5 text-amber-500 mr-2" />
           <h2 className="text-lg font-bold text-gray-900">Registered Staff</h2>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-gray-500 border-b border-gray-200">
@@ -170,9 +171,9 @@ const Accounts = () => {
                       {format(new Date(admin.createdAt || new Date()), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
+                      <button
                         onClick={() => handleOpenEditModal(admin)}
-                        className="text-gray-400 hover:text-amber-500 transition-colors p-2 bg-white rounded-lg border border-gray-200 shadow-sm inline-flex" 
+                        className="text-gray-400 hover:text-amber-500 transition-colors p-2 bg-white rounded-lg border border-gray-200 shadow-sm inline-flex"
                         title="Edit User"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -190,9 +191,9 @@ const Accounts = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
           >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -201,32 +202,32 @@ const Accounts = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleCreateAdmin} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={newAdmin.name}
-                    onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none"
                     placeholder="Jane Doe"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     required
                     value={newAdmin.email}
-                    onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none"
                     placeholder="jane@eleganceevents.com"
                   />
@@ -237,11 +238,11 @@ const Accounts = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     required
                     value={newAdmin.phone}
-                    onChange={(e) => setNewAdmin({...newAdmin, phone: e.target.value})}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, phone: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none"
                     placeholder="+1 (555) 000-0000"
                   />
@@ -254,14 +255,14 @@ const Accounts = () => {
                   <button type="button" onClick={generatePassword} className="text-xs text-amber-500 hover:text-amber-600 font-medium">Regenerate</button>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     readOnly
                     value={newAdmin.password}
                     className="flex-1 px-4 py-3 bg-gray-50 rounded-lg border border-gray-300 text-gray-600 font-mono text-sm outline-none"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={copyPassword}
                     className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors border border-gray-300"
                     title="Copy Password"
@@ -272,8 +273,8 @@ const Accounts = () => {
                 <p className="text-xs text-gray-500 mt-2">Please copy this password and share it securely with the user. They can change it after logging in.</p>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md disabled:opacity-70"
               >
@@ -288,9 +289,9 @@ const Accounts = () => {
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
           >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -299,32 +300,32 @@ const Accounts = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={editAdmin.name}
-                    onChange={(e) => setEditAdmin({...editAdmin, name: e.target.value})}
+                    onChange={(e) => setEditAdmin({ ...editAdmin, name: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none"
                     placeholder="Jane Doe"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     required
                     value={editAdmin.email}
-                    onChange={(e) => setEditAdmin({...editAdmin, email: e.target.value})}
+                    onChange={(e) => setEditAdmin({ ...editAdmin, email: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none bg-gray-50 text-gray-500"
                     placeholder="jane@eleganceevents.com"
                   />
@@ -335,35 +336,35 @@ const Accounts = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     required
                     value={editAdmin.phone}
-                    onChange={(e) => setEditAdmin({...editAdmin, phone: e.target.value})}
+                    onChange={(e) => setEditAdmin({ ...editAdmin, phone: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none"
                     placeholder="+1 (555) 000-0000"
                   />
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div>
                   <h4 className="text-sm font-bold text-gray-900">Active Account</h4>
                   <p className="text-xs text-gray-500">Allow user to log in</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={editAdmin.isActive} 
-                    onChange={(e) => setEditAdmin({...editAdmin, isActive: e.target.checked})}
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={editAdmin.isActive}
+                    onChange={(e) => setEditAdmin({ ...editAdmin, isActive: e.target.checked })}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                 </label>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md disabled:opacity-70"
               >

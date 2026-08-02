@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Inbox, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Inbox, Users, Settings, Tags } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = () => {
   const links = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Requests', path: '/requests', icon: Inbox },
+    { name: 'Categories', path: '/categories', icon: Tags },
     { name: 'Internal Users', path: '/accounts', icon: Users },
   ];
 

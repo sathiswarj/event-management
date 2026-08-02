@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 const requestSchema = new mongoose.Schema({
+    requestId: {
+        type: String,
+        unique: true
+    },
     title: {
         type: String,
         required: [true, 'Please add a title'],
@@ -15,6 +19,10 @@ const requestSchema = new mongoose.Schema({
         required: true,
         ref: 'Category'
     },
+    eventDate: {
+        type: Date,
+        required: [true, 'Please add an event date']
+    },
     customerName: {
         type: String,
         required: [true, 'Please add your name'],
@@ -28,16 +36,28 @@ const requestSchema = new mongoose.Schema({
             'Please add a valid email'
         ]
     },
+    customerPhone: {
+        type: String,
+        required: [true, 'Please add a phone number']
+    },
     status: {
         type: String,
-        enum: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
-        default: 'Pending'
+        enum: ['New', 'In Review', 'Approved', 'Rejected'],
+        default: 'New'
     },
     adminNotes: {
         type: String
     }
 }, {
     timestamps: true
+});
+
+requestSchema.pre('save', function(next) {
+    if (!this.requestId) {
+        // Generate a random 6-digit ID like REQ-123456
+        this.requestId = 'REQ-' + Math.floor(100000 + Math.random() * 900000);
+    }
+    if (typeof next === 'function') return next();
 });
 
 const Request = mongoose.model('Request', requestSchema);

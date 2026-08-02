@@ -5,7 +5,8 @@ import Category from '../models/Category.js';
 // @access  Public
 export const getCategories = async (req, res, next) => {
     try {
-        const categories = await Category.find({});
+        const query = req.query.active === 'true' ? { isActive: { $ne: false } } : {};
+        const categories = await Category.find(query);
         res.status(200).json(categories);
     } catch (error) {
         next(error);
@@ -17,7 +18,7 @@ export const getCategories = async (req, res, next) => {
 // @access  Private/Admin
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, isActive } = req.body;
         const categoryExists = await Category.findOne({ name });
 
         if (categoryExists) {
@@ -25,7 +26,11 @@ export const createCategory = async (req, res, next) => {
             throw new Error('Category already exists');
         }
 
-        const category = await Category.create({ name, description });
+        const category = await Category.create({ 
+            name, 
+            description, 
+            isActive: isActive !== undefined ? isActive : true 
+        });
         res.status(201).json(category);
     } catch (error) {
         next(error);
@@ -37,12 +42,13 @@ export const createCategory = async (req, res, next) => {
 // @access  Private/Admin
 export const updateCategory = async (req, res, next) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, isActive } = req.body;
         const category = await Category.findById(req.params.id);
 
         if (category) {
             category.name = name || category.name;
-            category.description = description || category.description;
+            if (description !== undefined) category.description = description;
+            if (isActive !== undefined) category.isActive = isActive;
 
             const updatedCategory = await category.save();
             res.status(200).json(updatedCategory);

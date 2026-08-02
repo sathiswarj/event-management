@@ -3,6 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { KeyRound, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../services/api';
 
 const ChangePassword = () => {
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
@@ -19,7 +20,7 @@ const ChangePassword = () => {
 
     setLoading(true);
     try {
-      await axios.put('http://localhost:5000/api/admin/auth/change-password', {
+      await axios.put(`${API_BASE_URL}/admin/auth/change-password`, {
         currentPassword: passwords.current,
         newPassword: passwords.new
       }, { withCredentials: true });

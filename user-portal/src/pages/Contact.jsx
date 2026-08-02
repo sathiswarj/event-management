@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../services/api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -9,7 +10,9 @@ const Contact = () => {
     description: '',
     category: '',
     customerName: '',
-    customerEmail: ''
+    customerEmail: '',
+    customerPhone: '',
+    eventDate: ''
   });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,7 +20,7 @@ const Contact = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/categories');
+        const res = await axios.get(`${API_BASE_URL}/categories?active=true`);
         setCategories(res.data);
         if (res.data.length > 0) {
           setFormData((prev) => ({ ...prev, category: res.data[0]._id }));
@@ -40,9 +43,9 @@ const Contact = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/requests', formData);
+      await axios.post(`${API_BASE_URL}/requests`, formData);
       toast.success('Your request has been successfully submitted! Our team will contact you shortly.');
-      setFormData({ title: '', description: '', category: categories[0]?._id || '', customerName: '', customerEmail: '' });
+      setFormData({ title: '', description: '', category: categories[0]?._id || '', customerName: '', customerEmail: '', customerPhone: '', eventDate: '' });
     } catch (error) {
       toast.error('Failed to submit request');
     } finally {
@@ -95,8 +98,19 @@ const Contact = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
-                  <input type="text" name="title" required value={formData.title} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="e.g. Annual Tech Gala 2026" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input type="tel" name="customerPhone" required value={formData.customerPhone} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="+1 (555) 000-0000" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+                    <input type="text" name="title" required value={formData.title} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="e.g. Annual Tech Gala 2026" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Event Date & Time</label>
+                    <input type="datetime-local" name="eventDate" required value={formData.eventDate} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent text-gray-700" />
+                  </div>
                 </div>
 
                 <div>

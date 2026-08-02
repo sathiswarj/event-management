@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Search, Filter, MoreVertical, X, Check, XCircle } from 'lucide-react';
+import { Search, Filter, MoreVertical, X, Check, XCircle, Copy, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../services/api';
 
 const Requests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   // Action Modal State
   const [actionModal, setActionModal] = useState({ show: false, request: null, status: '', message: '' });
@@ -20,7 +22,7 @@ const Requests = () => {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/requests', { withCredentials: true });
+      const res = await axios.get(`${API_BASE_URL}/requests`, { withCredentials: true });
       setRequests(res.data);
     } catch (error) {
       console.error('Failed to fetch requests', error);
@@ -36,7 +38,7 @@ const Requests = () => {
   const submitUpdateStatus = async () => {
     setIsUpdating(true);
     try {
-      await axios.put(`http://localhost:5000/api/requests/${actionModal.request._id}`, { 
+      await axios.put(`${API_BASE_URL}/requests/${actionModal.request._id}`, { 
         status: actionModal.status, 
         adminNotes: actionModal.message 
       }, { withCredentials: true });
@@ -55,7 +57,7 @@ const Requests = () => {
 
   const updateStatusSimple = async (id, status) => {
     try {
-      await axios.put(`http://localhost:5000/api/requests/${id}`, { status }, { withCredentials: true });
+      await axios.put(`${API_BASE_URL}/requests/${id}`, { status }, { withCredentials: true });
       toast.success(`Status updated to ${status}`);
       setSelectedRequest(null);
       fetchRequests();
@@ -113,9 +115,11 @@ const Requests = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-gray-500 border-b border-gray-200">
               <tr>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider">Request ID</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider">Event Title</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider">Client</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider">Category</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider">Event Date</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider">Date Submitted</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
@@ -124,21 +128,36 @@ const Requests = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">Loading requests...</td>
+                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">Loading requests...</td>
                 </tr>
               ) : requests.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">No requests found.</td>
+                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">No requests found.</td>
                 </tr>
               ) : (
                 requests.map((req) => (
-                  <tr key={req._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedRequest(req)}>
+                  <tr key={req._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => { setSelectedRequest(req); setIsDropdownOpen(false); }}>
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      <div className="flex items-center space-x-2">
+                        <span>{req.requestId || req._id.substring(0, 8)}</span>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(req.requestId || req._id.substring(0, 8)); toast.success('ID copied to clipboard'); }}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Copy ID"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{req.title}</td>
                     <td className="px-6 py-4 text-gray-600">
                       <div>{req.customerName}</div>
                       <div className="text-xs text-gray-400">{req.customerEmail}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{req.category?.name || 'N/A'}</td>
+                    <td className="px-6 py-4 text-gray-900 font-medium">
+                      {req.eventDate ? format(new Date(req.eventDate), 'MMM dd, yyyy') : 'N/A'}
+                    </td>
                     <td className="px-6 py-4 text-gray-500">
                       {format(new Date(req.createdAt), 'MMM dd, yyyy')}
                     </td>
@@ -182,6 +201,16 @@ const Requests = () => {
               <div className="mb-6 flex justify-between items-start">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedRequest.title}</h3>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <p className="text-sm font-medium text-gray-500">ID: {selectedRequest.requestId || selectedRequest._id}</p>
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(selectedRequest.requestId || selectedRequest._id); toast.success('ID copied to clipboard'); }}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Copy ID"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold border inline-block ${getStatusColor(selectedRequest.status)}`}>
                     {getAdminLabel(selectedRequest.status)}
                   </span>
@@ -191,9 +220,17 @@ const Requests = () => {
               <div className="space-y-6">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Client Information</h4>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p className="font-medium text-gray-900">{selectedRequest.customerName}</p>
-                    <p className="text-gray-600 text-sm mt-1">{selectedRequest.customerEmail}</p>
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedRequest.customerName}</p>
+                      <p className="text-gray-600 text-sm mt-1">{selectedRequest.customerEmail}</p>
+                    </div>
+                    {selectedRequest.customerPhone && (
+                      <div className="text-right">
+                        <p className="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Phone</p>
+                        <p className="text-gray-900 font-medium text-sm">{selectedRequest.customerPhone}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -201,6 +238,13 @@ const Requests = () => {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Event Category</h4>
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <p className="font-medium text-gray-900">{selectedRequest.category?.name || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Event Date & Time</h4>
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <p className="font-medium text-gray-900">{selectedRequest.eventDate ? format(new Date(selectedRequest.eventDate), 'MMMM dd, yyyy - h:mm a') : 'Not Specified'}</p>
                   </div>
                 </div>
 
@@ -224,34 +268,73 @@ const Requests = () => {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Submission Date</h4>
                   <p className="text-gray-900 font-medium">{format(new Date(selectedRequest.createdAt), 'MMMM dd, yyyy - h:mm a')}</p>
                 </div>
+
+                {selectedRequest.updatedAt && selectedRequest.updatedAt !== selectedRequest.createdAt && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Last Updated</h4>
+                    <p className="text-gray-900 font-medium">{format(new Date(selectedRequest.updatedAt), 'MMMM dd, yyyy - h:mm a')}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 text-center">Update Status</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => confirmAction(selectedRequest, 'Approved')}
-                  className="flex items-center justify-center py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors shadow-sm"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Approve
-                </button>
-                <button 
-                  onClick={() => confirmAction(selectedRequest, 'Rejected')}
-                  className="flex items-center justify-center py-3 bg-white border border-gray-200 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors shadow-sm"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject
-                </button>
+            {selectedRequest.status !== 'Rejected' && (
+              <div className="p-6 border-t border-gray-100 bg-gray-50 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Update Status</p>
+                <div className="flex items-start space-x-3">
+                  <div className="relative flex-1">
+                    <button 
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className={`w-full flex items-center justify-between bg-white border text-gray-900 font-medium rounded-xl p-3 shadow-sm outline-none transition-all ${isDropdownOpen ? 'border-amber-400 ring-2 ring-amber-500/20' : 'border-gray-300 hover:border-amber-400'}`}
+                    >
+                      <span>{selectedRequest.status}</span>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-amber-500' : ''}`} />
+                    </button>
+                    
+                    {isDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-20">
+                        {['New', 'In Review', 'Approved'].map(statusOption => (
+                          <button
+                            key={statusOption}
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              if (statusOption === selectedRequest.status) return;
+                              if (statusOption === 'Approved') {
+                                confirmAction(selectedRequest, 'Approved');
+                              } else {
+                                updateStatusSimple(selectedRequest._id, statusOption);
+                              }
+                            }}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center ${
+                              selectedRequest.status === statusOption 
+                                ? 'bg-amber-50 text-amber-700' 
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-amber-600'
+                            }`}
+                          >
+                            {selectedRequest.status === statusOption && <Check className="w-4 h-4 mr-2" />}
+                            <span className={selectedRequest.status === statusOption ? '' : 'ml-6'}>{statusOption}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={() => confirmAction(selectedRequest, 'Rejected')}
+                    disabled={selectedRequest.status === 'New'}
+                    title={selectedRequest.status === 'New' ? "Cannot reject a New request directly. Move to In Review first." : ""}
+                    className={`flex items-center justify-center px-5 py-3 border rounded-xl font-bold transition-colors shadow-sm shrink-0 ${
+                      selectedRequest.status === 'New'
+                        ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-white border-gray-200 text-red-600 hover:bg-red-50'
+                    }`}
+                  >
+                    <XCircle className="w-5 h-5 mr-2" />
+                    Reject
+                  </button>
+                </div>
               </div>
-              <button 
-                onClick={() => updateStatusSimple(selectedRequest._id, 'In Review')}
-                className="w-full flex items-center justify-center py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold transition-colors shadow-sm mt-2"
-              >
-                Mark as In Review
-              </button>
-            </div>
+            )}
           </motion.div>
         </div>
       )}

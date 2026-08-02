@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, B
 import { TrendingUp, Activity, Target, Inbox } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
+import { API_BASE_URL } from '../services/api';
 
 const Dashboard = () => {
   const [leads, setLeads] = useState([]);
@@ -12,7 +13,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/requests', { withCredentials: true });
+        const res = await axios.get(`${API_BASE_URL}/requests`, { withCredentials: true });
         setLeads(Array.isArray(res.data) ? res.data : (res.data.leads || []));
       } catch (error) {
         console.error('Failed to fetch leads', error);

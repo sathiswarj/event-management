@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 
-const API_URL = 'http://localhost:5000/api/admin/auth/';
+const API_URL = `${API_BASE_URL}/admin/auth/`;
 
 // Login user
 const login = async (userData) => {

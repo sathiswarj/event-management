@@ -10,6 +10,7 @@ const Navbar = () => {
     { name: 'Home', path: '/' },
     { name: 'About Us', path: '/about' },
     { name: 'Services', path: '/services' },
+    { name: 'Track', path: '/track' },
     { name: 'Contact', path: '/contact' },
   ];
 
@@ -41,6 +42,7 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            
             <Link
               to="/contact"
               className="ml-4 inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 transition-colors"
@@ -79,6 +81,7 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+
             <Link
               to="/contact"
               onClick={() => setIsOpen(false)}

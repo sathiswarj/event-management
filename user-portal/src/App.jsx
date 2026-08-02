@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
+import Track from './pages/Track';
+import TrackSearch from './pages/TrackSearch';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/services" element={<Services />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/track" element={<TrackSearch />} />
+            <Route path="/track/:leadId" element={<Track />} />
           </Routes>
         </main>
         <Footer />

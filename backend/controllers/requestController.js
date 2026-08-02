@@ -5,14 +5,16 @@ import Request from '../models/Request.js';
 // @access  Public
 export const createRequest = async (req, res, next) => {
     try {
-        const { title, description, category, customerName, customerEmail } = req.body;
+        const { title, description, category, customerName, customerEmail, customerPhone, eventDate } = req.body;
 
         const request = await Request.create({
             title,
             description,
             category,
             customerName,
-            customerEmail
+            customerEmail,
+            customerPhone,
+            eventDate
         });
 
         res.status(201).json(request);
@@ -38,7 +40,14 @@ export const getRequests = async (req, res, next) => {
 // @access  Public
 export const getRequestById = async (req, res, next) => {
     try {
-        const request = await Request.findById(req.params.id).populate('category', 'name');
+        const id = req.params.id;
+        
+        // Find by _id (if valid ObjectId) or by requestId
+        const query = id.match(/^[0-9a-fA-F]{24}$/) 
+            ? { $or: [{ _id: id }, { requestId: id }] }
+            : { requestId: id };
+            
+        const request = await Request.findOne(query).populate('category', 'name');
 
         if (request) {
             res.status(200).json(request);
@@ -57,13 +66,18 @@ export const getRequestById = async (req, res, next) => {
 export const updateRequest = async (req, res, next) => {
     try {
         const { status, adminNotes } = req.body;
-        const request = await Request.findById(req.params.id);
+        
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
 
-        if (request) {
-            if (status) request.status = status;
-            if (adminNotes !== undefined) request.adminNotes = adminNotes;
+        const updatedRequest = await Request.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateData },
+            { new: true }
+        );
 
-            const updatedRequest = await request.save();
+        if (updatedRequest) {
             res.status(200).json(updatedRequest);
         } else {
             res.status(404);
