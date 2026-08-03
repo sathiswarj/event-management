@@ -6,7 +6,7 @@ import axios from 'axios';
 // @access  Public
 export const createRequest = async (req, res, next) => {
     try {
-        const { title, description, category, customerName, customerEmail, customerPhone, eventDate } = req.body;
+        const { title, description, category, customerName, customerEmail, customerPhone, telegramChatId, eventDate } = req.body;
 
         const request = await Request.create({
             title,
@@ -15,6 +15,7 @@ export const createRequest = async (req, res, next) => {
             customerName,
             customerEmail,
             customerPhone,
+            telegramChatId,
             eventDate
         });
 
@@ -28,6 +29,7 @@ export const createRequest = async (req, res, next) => {
                     customerName: request.customerName,
                     customerEmail: request.customerEmail,
                     customerPhone: request.customerPhone,
+                    telegramChatId: request.telegramChatId,
                     eventType: request.title,
                     description: request.description,
                     eventDate: request.eventDate,
@@ -103,6 +105,27 @@ export const updateRequest = async (req, res, next) => {
         );
 
         if (updatedRequest) {
+            // n8n Webhook Integration for Status Update
+            if (status) {
+                try {
+                    const statusWebhookUrl = process.env.N8N_STATUS_WEBHOOK_URL;
+                    if (statusWebhookUrl) {
+                        const payload = {
+                            requestId: updatedRequest.requestId || updatedRequest._id,
+                            customerName: updatedRequest.customerName,
+                            customerEmail: updatedRequest.customerEmail,
+                            telegramChatId: updatedRequest.telegramChatId,
+                            title: updatedRequest.title,
+                            eventDate: updatedRequest.eventDate,
+                            status: updatedRequest.status
+                        };
+                        await axios.post(statusWebhookUrl, payload);
+                    }
+                } catch (webhookError) {
+                    console.error('Failed to send status webhook to n8n:', webhookError.message);
+                }
+            }
+
             res.status(200).json(updatedRequest);
         } else {
             res.status(404);

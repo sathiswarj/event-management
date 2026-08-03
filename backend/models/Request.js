@@ -37,6 +37,10 @@ const requestSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a phone number']
     },
+    telegramChatId: {
+        type: String,
+        trim: true
+    },
     status: {
         type: String,
         enum: ['New', 'In Review', 'Approved', 'Rejected'],
