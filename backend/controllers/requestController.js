@@ -24,6 +24,9 @@ export const createRequest = async (req, res, next) => {
         try {
             const webhookUrl = process.env.N8N_WEBHOOK_URL;
             if (webhookUrl) {
+                // Populate category to send the actual name to n8n instead of just the ID
+                await request.populate('category', 'name');
+                
                 const payload = {
                     requestId: request.requestId || request._id,
                     customerName: request.customerName,
@@ -32,6 +35,7 @@ export const createRequest = async (req, res, next) => {
                     telegramChatId: request.telegramChatId,
                     eventType: request.title,
                     description: request.description,
+                    category: request.category ? request.category.name : null,
                     eventDate: request.eventDate,
                     status: 'New'
                 };
@@ -108,7 +112,7 @@ export const updateRequest = async (req, res, next) => {
             // n8n Webhook Integration for Status Update
             if (status) {
                 try {
-                    const statusWebhookUrl = process.env.N8N_STATUS_WEBHOOK_URL;
+                    const statusWebhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
                     if (statusWebhookUrl) {
                         const payload = {
                             requestId: updatedRequest.requestId || updatedRequest._id,
