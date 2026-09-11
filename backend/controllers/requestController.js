@@ -16,7 +16,8 @@ export const createRequest = async (req, res, next) => {
             customerEmail,
             customerPhone,
             telegramChatId,
-            eventDate
+            eventDate,
+            userId: req.user ? req.user.userId : null
         });
 
         // n8n Webhook Integration
@@ -60,6 +61,18 @@ export const createRequest = async (req, res, next) => {
 export const getRequests = async (req, res, next) => {
     try {
         const requests = await Request.find({}).populate('category', 'name').sort('-createdAt');
+        res.status(200).json(requests);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get logged in user's requests
+// @route   GET /api/requests/my
+// @access  Private
+export const getMyRequests = async (req, res, next) => {
+    try {
+        const requests = await Request.find({ userId: req.user.userId }).sort('-createdAt');
         res.status(200).json(requests);
     } catch (error) {
         next(error);
@@ -134,6 +147,44 @@ export const updateRequest = async (req, res, next) => {
         } else {
             res.status(404);
             throw new Error('Request not found');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Accept quotation
+// @route   POST /api/requests/:id/accept
+// @access  Private
+export const acceptRequest = async (req, res, next) => {
+    try {
+        const request = await Request.findOne({ requestId: req.params.id, userId: req.user.userId });
+        if (request && request.status === 'Quotation Sent') {
+            request.status = 'Confirmed';
+            await request.save();
+            res.status(200).json(request);
+        } else {
+            res.status(404);
+            throw new Error('Request not found or cannot be accepted');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reject quotation
+// @route   POST /api/requests/:id/reject
+// @access  Private
+export const rejectRequest = async (req, res, next) => {
+    try {
+        const request = await Request.findOne({ requestId: req.params.id, userId: req.user.userId });
+        if (request && request.status === 'Quotation Sent') {
+            request.status = 'Rejected';
+            await request.save();
+            res.status(200).json(request);
+        } else {
+            res.status(404);
+            throw new Error('Request not found or cannot be rejected');
         }
     } catch (error) {
         next(error);

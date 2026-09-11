@@ -1,9 +1,15 @@
 import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 const requestSchema = new mongoose.Schema({
     requestId: {
         type: String,
+        default: uuidv4,
         unique: true
+    },
+    userId: {
+        type: String,
+        required: true
     },
     title: {
         type: String,
@@ -14,10 +20,9 @@ const requestSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a description']
     },
-    category: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'Category'
+    categoryId: {
+        type: String,
+        required: true
     },
     eventDate: {
         type: Date,
@@ -50,15 +55,14 @@ const requestSchema = new mongoose.Schema({
         type: String
     }
 }, {
-    timestamps: true
-});
-
-requestSchema.pre('save', function (next) {
-    if (!this.requestId) {
-        // Generate a random 6-digit ID like REQ-123456
-        this.requestId = 'REQ-' + Math.floor(100000 + Math.random() * 900000);
+    timestamps: true,
+    toJSON: {
+        transform: function (doc, ret) {
+            delete ret._id;
+            delete ret.__v;
+            return ret;
+        }
     }
-    if (typeof next === 'function') return next();
 });
 
 const Request = mongoose.model('Request', requestSchema);

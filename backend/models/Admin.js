@@ -1,7 +1,13 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 const adminSchema = new mongoose.Schema({
+    adminId: {
+        type: String,
+        default: uuidv4,
+        unique: true
+    },
     name: {
         type: String,
         required: true,
@@ -26,7 +32,15 @@ const adminSchema = new mongoose.Schema({
         default: true
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: {
+        transform: function (doc, ret) {
+            delete ret._id;
+            delete ret.__v;
+            delete ret.password;
+            return ret;
+        }
+    }
 });
 
 adminSchema.methods.matchPassword = async function (enteredPassword) {

@@ -1,16 +1,24 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Calendar, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, Menu, X, User } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+    navigate('/');
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'About Us', path: '/about' },
     { name: 'Services', path: '/services' },
-    { name: 'Track', path: '/track' },
     { name: 'Contact', path: '/contact' },
   ];
 
@@ -26,26 +34,48 @@ const Navbar = () => {
               <span className="font-serif text-2xl font-bold text-gray-900 tracking-tight">Elegance Events</span>
             </Link>
           </div>
-          
+
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`${
-                  isActive(link.path)
-                    ? 'text-amber-600 border-b-2 border-amber-600'
-                    : 'text-gray-600 hover:text-amber-600 hover:border-b-2 hover:border-amber-300'
-                } px-1 py-2 text-sm font-medium transition-colors duration-200`}
+                className={`${isActive(link.path)
+                  ? 'text-amber-600 border-b-2 border-amber-600'
+                  : 'text-gray-600 hover:text-amber-600 hover:border-b-2 hover:border-amber-300'
+                  } px-1 py-2 text-sm font-medium transition-colors duration-200`}
               >
                 {link.name}
               </Link>
             ))}
-            
-            <Link
-              to="/contact"
-              className="ml-4 inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 transition-colors"
+
+            {user ? (
+              <>
+
+                <Link
+                  to="/profile"
+                  className="ml-4 inline-flex items-center justify-center p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Profile"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className={`${isActive('/login')
+                  ? 'text-amber-600 border-b-2 border-amber-600'
+                  : 'text-gray-600 hover:text-amber-600 hover:border-b-2 hover:border-amber-300'
+                  } px-1 py-2 text-sm font-medium transition-colors duration-200`}
+              >
+                Log In
+              </Link>
+            )}
+
+            <Link 
+              to="/book" 
+              className="hidden md:inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-full text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition-colors"
             >
               Book Now
             </Link>
@@ -72,18 +102,50 @@ const Navbar = () => {
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className={`${
-                  isActive(link.path)
-                    ? 'bg-amber-50 text-amber-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                } block px-3 py-2 rounded-md text-base font-medium`}
+                className={`${isActive(link.path)
+                  ? 'bg-amber-50 text-amber-600'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
               >
                 {link.name}
               </Link>
             ))}
 
+            {user ? (
+              <>
+
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className={`${isActive('/profile')
+                    ? 'bg-amber-50 text-amber-600'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    } block px-3 py-2 rounded-md text-base font-medium`}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
+                >
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className={`${isActive('/login')
+                  ? 'bg-amber-50 text-amber-600'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+              >
+                Log In
+              </Link>
+            )}
+
             <Link
-              to="/contact"
+              to="/book"
               onClick={() => setIsOpen(false)}
               className="block w-full text-center mt-4 px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800"
             >

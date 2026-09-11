@@ -10,6 +10,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
@@ -37,6 +38,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api', userRoutes);
 
 // Error Handling Middleware
 app.use(notFound);
