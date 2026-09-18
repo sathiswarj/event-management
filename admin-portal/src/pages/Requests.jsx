@@ -72,6 +72,7 @@ const Requests = () => {
       case 'In Review': return 'Curatorial Review';
       case 'Approved': return 'Allocate & Approve';
       case 'Rejected': return 'Date Unavailable';
+      case 'Date Conflict': return 'Conflict Alert';
       default: return status;
     }
   };
@@ -82,6 +83,7 @@ const Requests = () => {
       case 'In Review': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Approved': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
+      case 'Date Conflict': return 'bg-orange-100 text-orange-800 border-orange-200 animate-pulse';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -151,8 +153,8 @@ const Requests = () => {
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{req.title}</td>
                     <td className="px-6 py-4 text-gray-600">
-                      <div>{req.customerName}</div>
-                      <div className="text-xs text-gray-400">{req.customerEmail}</div>
+                      <div>{req.user?.name}</div>
+                      <div className="text-xs text-gray-400">{req.user?.email}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{req.category?.name || 'N/A'}</td>
                     <td className="px-6 py-4 text-gray-900 font-medium">
@@ -222,13 +224,13 @@ const Requests = () => {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Client Information</h4>
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-gray-900">{selectedRequest.customerName}</p>
-                      <p className="text-gray-600 text-sm mt-1">{selectedRequest.customerEmail}</p>
+                      <p className="font-medium text-gray-900">{selectedRequest.user?.name}</p>
+                      <p className="text-gray-600 text-sm mt-1">{selectedRequest.user?.email}</p>
                     </div>
-                    {selectedRequest.customerPhone && (
+                    {selectedRequest.user?.phone && (
                       <div className="text-right">
                         <p className="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Phone</p>
-                        <p className="text-gray-900 font-medium text-sm">{selectedRequest.customerPhone}</p>
+                        <p className="text-gray-900 font-medium text-sm">{selectedRequest.user?.phone}</p>
                       </div>
                     )}
                   </div>

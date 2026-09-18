@@ -35,8 +35,9 @@ const Dashboard = () => {
   // BI Math
   const totalLeads = leads.length;
   const totalManagedPipeline = leads.reduce((sum, lead) => sum + ((lead.guestCount || 10) * 1500), 0);
-  const activeLeadInflux = leads.filter(lead => lead.status === 'New').length;
+  const activeLeadInflux = leads.filter(lead => lead.status === 'Pending').length;
   const approvedLeads = leads.filter(lead => lead.status === 'Approved').length;
+  const dateConflicts = leads.filter(lead => lead.status === 'Date Conflict').length;
   const conversionRatio = totalLeads === 0 ? 0 : ((approvedLeads / totalLeads) * 100);
 
   // Data for Pie Chart
@@ -96,7 +97,7 @@ const Dashboard = () => {
       </div>
 
       {/* KPI Metric Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
         
         {/* Highlighted Pipeline Card */}
         <div className="bg-gray-800 border border-amber-500/30 p-8 rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.1)] relative overflow-hidden group">
@@ -138,6 +139,19 @@ const Dashboard = () => {
               {conversionRatio.toFixed(1)}<span className="text-2xl text-gray-500">%</span>
             </p>
           </div>
+        </div>
+
+        {/* New Date Conflict Card */}
+        <div className="bg-gray-800 border border-gray-700 p-8 rounded-2xl shadow-sm flex flex-col justify-between">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center border border-red-500/20">
+              <Activity className="text-red-400 w-5 h-5" />
+            </div>
+            <h3 className="text-gray-400 font-medium tracking-wide">Date Conflicts</h3>
+          </div>
+          <p className="text-4xl font-bold text-white tracking-tight">
+            {dateConflicts}
+          </p>
         </div>
 
       </div>

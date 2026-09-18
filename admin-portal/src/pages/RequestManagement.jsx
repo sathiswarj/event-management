@@ -3,9 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout, reset } from '../features/auth/authSlice';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 import { Copy } from 'lucide-react';
-import { API_BASE_URL } from '../services/api';
+import requestService from '../services/requestService';
 
 const RequestManagement = () => {
   const navigate = useNavigate();
@@ -22,10 +21,7 @@ const RequestManagement = () => {
 
     const fetchRequests = async () => {
       try {
-        const config = {
-          withCredentials: true,
-        };
-        const res = await axios.get(`${API_BASE_URL}/requests`, config);
+        const res = await requestService.getRequests();
         setRequests(res.data);
         setLoading(false);
       } catch (error) {
@@ -44,17 +40,14 @@ const RequestManagement = () => {
   const onLogout = () => {
     dispatch(logout());
     dispatch(reset());
-    navigate('/login`);
+    navigate('/login');
   };
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const config = {
-        withCredentials: true,
-      };
-      await axios.put(`${API_BASE_URL}/requests/${id}`, { status: newStatus }, config);
+      await requestService.updateRequestStatus(id, newStatus);
       setRequests((prev) => prev.map((req) => req._id === id ? { ...req, status: newStatus } : req));
-      toast.success(`Status updated');
+      toast.success('Status updated');
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -107,7 +100,7 @@ const RequestManagement = () => {
                           </button>
                         </div>
                         <p className="text-sm font-medium text-blue-600 truncate">{req.title}</p>
-                        <p className="text-sm text-gray-500 mt-1">From: {req.customerName} ({req.customerEmail})</p>
+                        <p className="text-sm text-gray-500 mt-1">From: {req.user?.name} ({req.user?.email})</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

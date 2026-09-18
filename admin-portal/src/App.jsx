@@ -9,6 +9,8 @@ import Requests from './pages/Requests';
 import Categories from './pages/Categories';
 import Accounts from './pages/Accounts';
 import ChangePassword from './pages/ChangePassword';
+import Customers from './pages/Customers';
+import CalendarView from './pages/CalendarView';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,6 +40,8 @@ function App() {
             <Route path="/requests" element={<Requests />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/accounts" element={<Accounts />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/calendar" element={<CalendarView />} />
             <Route path="/settings" element={<ChangePassword />} />
           </Route>
         </Route>
