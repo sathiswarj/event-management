@@ -1,57 +1,97 @@
 import Request from '../models/Request.js';
 import axios from 'axios';
 
+// Helper to mark overlapping requests as Date Conflict
+const handleDateConflicts = async (eventDate, approvedRequestId) => {
+    // Strictly extract the YYYY-MM-DD to ignore time and timezone shifts
+    const dateStr = typeof eventDate === 'string' ? eventDate.split('T')[0] : new Date(eventDate).toISOString().split('T')[0];
+    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+
+    await Request.updateMany({
+        _id: { $ne: approvedRequestId },
+        eventDate: { $gte: startOfDay, $lte: endOfDay },
+        status: 'Pending'
+    }, {
+        $set: { status: 'Date Conflict', dateConflict: true }
+    });
+};
+
 // @desc    Create a request
 // @route   POST /api/requests
 // @access  Public
 export const createRequest = async (req, res, next) => {
     try {
-        const { title, description, category, customerName, customerEmail, customerPhone, telegramChatId, eventDate } = req.body;
+        // Only extract what the frontend BookNow.jsx actually sends
+        const { title, description, categoryId, eventDate } = req.body;
 
+        // 1. Check MongoDB for existing approved/confirmed request on the same date (Timezone-aware)
+        const submittedDate = new Date(eventDate);
+        const conflictingEvent = await Request.findOne({
+            $expr: {
+                $eq: [
+                    // Format the DB date to YYYY-MM-DD in IST (+05:30)
+                    { $dateToString: { format: "%Y-%m-%d", date: "$eventDate", timezone: "+05:30" } },
+                    // Format the submitted date to YYYY-MM-DD in IST (+05:30)
+                    { $dateToString: { format: "%Y-%m-%d", date: submittedDate, timezone: "+05:30" } }
+                ]
+            },
+            status: { $regex: /^(approved|confirmed)$/i }
+        });
+
+        const hasConflict = !!conflictingEvent;
+        const status = hasConflict ? 'Date Conflict' : 'Pending';
+
+        // 2. Generate unique requestId: REQ-YYYYMMDD-XXXX
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const randomDigits = Math.floor(1000 + Math.random() * 9000);
+        const requestId = `REQ-${yyyy}${mm}${dd}-${randomDigits}`;
+
+        // 3. Save the new request to MongoDB immediately
         const request = await Request.create({
+            requestId,
             title,
             description,
-            category,
-            customerName,
-            customerEmail,
-            customerPhone,
-            telegramChatId,
+            categoryId,
             eventDate,
+            status,
+            dateConflict: hasConflict,
             userId: req.user ? req.user.userId : null
         });
 
-        // n8n Webhook Integration
-        // Best practice: Run this asynchronously and catch errors so it doesn't block or fail the primary API response
+        // 4 & 5. Send webhook in a try/catch
         try {
             const webhookUrl = process.env.N8N_WEBHOOK_URL;
             if (webhookUrl) {
-                // Populate category to send the actual name to n8n instead of just the ID
+                // Populate user details so we can send them to the webhook without needing them in req.body
                 await request.populate('category', 'name');
+                await request.populate('user', 'name email phone');
                 
                 const payload = {
-                    requestId: request.requestId || request._id,
-                    customerName: request.customerName,
-                    customerEmail: request.customerEmail,
-                    customerPhone: request.customerPhone,
-                    telegramChatId: request.telegramChatId,
-                    eventType: request.title,
-                    description: request.description,
+                    requestId,
+                    customerName: request.user ? request.user.name : null,
+                    customerEmail: request.user ? request.user.email : null,
+                    customerPhone: request.user ? request.user.phone : null,
+                    title,
+                    eventDate,
                     category: request.category ? request.category.name : null,
-                    eventDate: request.eventDate,
-                    status: 'New'
+                    description,
+                    dateConflict: hasConflict
                 };
-
-                // Fire and forget, but await so we can log immediate errors if needed
+                
                 await axios.post(webhookUrl, payload);
             }
         } catch (webhookError) {
-            console.error('Failed to send webhook to n8n:', webhookError.message);
-            // We DO NOT throw the error here because the database operation already succeeded.
+            console.log('Webhook error:', webhookError.message);
         }
 
+        // 6 & 7. Return created request object as JSON with status 201
         res.status(201).json(request);
     } catch (error) {
-        next(error);
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -60,7 +100,7 @@ export const createRequest = async (req, res, next) => {
 // @access  Public
 export const getRequests = async (req, res, next) => {
     try {
-        const requests = await Request.find({}).populate('category', 'name').sort('-createdAt');
+        const requests = await Request.find({}).populate('category', 'name').populate('user', 'name email phone telegramChatId').sort('-createdAt');
         res.status(200).json(requests);
     } catch (error) {
         next(error);
@@ -72,7 +112,7 @@ export const getRequests = async (req, res, next) => {
 // @access  Private
 export const getMyRequests = async (req, res, next) => {
     try {
-        const requests = await Request.find({ userId: req.user.userId }).sort('-createdAt');
+        const requests = await Request.find({ userId: req.user.userId }).populate('category', 'name').populate('user', 'name email phone telegramChatId').sort('-createdAt');
         res.status(200).json(requests);
     } catch (error) {
         next(error);
@@ -91,7 +131,7 @@ export const getRequestById = async (req, res, next) => {
             ? { $or: [{ _id: id }, { requestId: id }] }
             : { requestId: id };
 
-        const request = await Request.findOne(query).populate('category', 'name');
+        const request = await Request.findOne(query).populate('category', 'name').populate('user', 'name email phone telegramChatId');
 
         if (request) {
             res.status(200).json(request);
@@ -122,16 +162,22 @@ export const updateRequest = async (req, res, next) => {
         );
 
         if (updatedRequest) {
+            // Check if we need to trigger Date Conflict for other pending requests
+            if (['Approved', 'Confirmed', 'Completed'].includes(updatedRequest.status)) {
+                await handleDateConflicts(updatedRequest.eventDate, updatedRequest._id);
+            }
+
             // n8n Webhook Integration for Status Update
             if (status) {
                 try {
                     const statusWebhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
                     if (statusWebhookUrl) {
+                        await updatedRequest.populate('user', 'name email phone telegramChatId');
                         const payload = {
                             requestId: updatedRequest.requestId || updatedRequest._id,
-                            customerName: updatedRequest.customerName,
-                            customerEmail: updatedRequest.customerEmail,
-                            telegramChatId: updatedRequest.telegramChatId,
+                            customerName: updatedRequest.user ? updatedRequest.user.name : null,
+                            customerEmail: updatedRequest.user ? updatedRequest.user.email : null,
+                            telegramChatId: updatedRequest.user ? updatedRequest.user.telegramChatId : null,
                             title: updatedRequest.title,
                             eventDate: updatedRequest.eventDate,
                             status: updatedRequest.status
@@ -162,6 +208,10 @@ export const acceptRequest = async (req, res, next) => {
         if (request && request.status === 'Quotation Sent') {
             request.status = 'Confirmed';
             await request.save();
+
+            // Mark overlapping pending events as Date Conflict
+            await handleDateConflicts(request.eventDate, request._id);
+
             res.status(200).json(request);
         } else {
             res.status(404);
@@ -224,12 +274,14 @@ export const getStats = async (req, res, next) => {
         let pending = 0;
         let approved = 0;
         let completed = 0;
+        let dateConflict = 0;
 
         statusCounts.forEach(stat => {
             total += stat.count;
             if (stat._id === 'Pending') pending = stat.count;
             if (stat._id === 'Approved') approved = stat.count;
             if (stat._id === 'Completed') completed = stat.count;
+            if (stat._id === 'Date Conflict') dateConflict = stat.count;
         });
 
         // Aggregate by category
@@ -285,7 +337,7 @@ export const getStats = async (req, res, next) => {
         }
 
         res.status(200).json({
-            stats: { total, pending, approved, completed },
+            stats: { total, pending, approved, completed, dateConflict },
             categoryData,
             trendData
         });

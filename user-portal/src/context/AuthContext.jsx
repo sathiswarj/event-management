@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -21,10 +21,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchUser = async (token) => {
         try {
-            const config = {
-                headers: { Authorization: `Bearer ${token}` }
-            };
-            const { data } = await axios.get('/api/users/me', config);
+            const { data } = await authAPI.getMe();
             setUser({ ...data, token });
         } catch (error) {
             console.error('Error fetching user', error);
@@ -36,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post('/api/auth/login', { email, password });
+            const { data } = await authAPI.login({ email, password });
             localStorage.setItem('token', data.token);
             setUser(data);
             return true;
@@ -48,7 +45,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            await axios.post('/api/auth/register', userData);
+            await authAPI.register(userData);
             toast.success('Registration successful. Please log in.');
             return true;
         } catch (error) {

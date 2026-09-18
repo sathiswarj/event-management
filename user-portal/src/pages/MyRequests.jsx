@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { requestAPI } from '../services/api';
 import { Plus, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -24,9 +24,7 @@ const MyRequests = () => {
     useEffect(() => {
         const fetchRequests = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-                // using /api/requests/my as requested
-                const { data } = await axios.get('/api/requests/my', config);
+                const { data } = await requestAPI.getMyRequests();
                 // Sort newest first
                 const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 setRequests(sorted);

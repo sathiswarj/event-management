@@ -22,7 +22,7 @@ const Home = () => {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-start w-full">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold leading-tight mb-6 max-w-4xl">
+          <h1 className="text-5xl md:text-7xl font-heading font-bold leading-tight mb-6 max-w-4xl">
             Designing <span className="text-amber-500 italic">Extraordinary</span> Moments That Last a Lifetime
           </h1>
           <p className="text-lg md:text-2xl text-gray-300 mb-10 max-w-2xl leading-relaxed">
@@ -44,19 +44,19 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-amber-500/50">
             <div>
-              <p className="text-4xl font-bold font-serif mb-2">500+</p>
+              <p className="text-4xl font-bold font-heading mb-2">500+</p>
               <p className="text-amber-100 font-medium">Events Executed</p>
             </div>
             <div>
-              <p className="text-4xl font-bold font-serif mb-2">98%</p>
+              <p className="text-4xl font-bold font-heading mb-2">98%</p>
               <p className="text-amber-100 font-medium">Client Retention</p>
             </div>
             <div>
-              <p className="text-4xl font-bold font-serif mb-2">15+</p>
+              <p className="text-4xl font-bold font-heading mb-2">15+</p>
               <p className="text-amber-100 font-medium">Years Experience</p>
             </div>
             <div>
-              <p className="text-4xl font-bold font-serif mb-2">50+</p>
+              <p className="text-4xl font-bold font-heading mb-2">50+</p>
               <p className="text-amber-100 font-medium">Industry Awards</p>
             </div>
           </div>
@@ -67,7 +67,7 @@ const Home = () => {
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-6">Our Areas of Expertise</h2>
+            <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-6">Our Areas of Expertise</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               We specialize in creating immersive experiences across a diverse range of event types. Every detail is meticulously planned and flawlessly executed.
             </p>
@@ -83,7 +83,7 @@ const Home = () => {
                 <div className="absolute -top-10 right-8 w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg text-white">
                   <PartyPopper className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold font-serif text-gray-900 mb-4">Corporate Events</h3>
+                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-4">Corporate Events</h3>
                 <p className="text-gray-600 leading-relaxed mb-6">
                   Conferences, product launches, galas, and team building experiences designed to elevate your brand and impress stakeholders.
                 </p>
@@ -102,7 +102,7 @@ const Home = () => {
                 <div className="absolute -top-10 right-8 w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg text-white">
                   <Heart className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold font-serif text-gray-900 mb-4">Luxury Weddings</h3>
+                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-4">Luxury Weddings</h3>
                 <p className="text-gray-600 leading-relaxed mb-6">
                   Bespoke wedding planning ensuring every detail reflects your personal love story. From destination weddings to intimate ceremonies.
                 </p>
@@ -121,7 +121,7 @@ const Home = () => {
                 <div className="absolute -top-10 right-8 w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center shadow-lg text-white">
                   <Star className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold font-serif text-gray-900 mb-4">Private Celebrations</h3>
+                <h3 className="text-2xl font-bold font-heading text-gray-900 mb-4">Private Celebrations</h3>
                 <p className="text-gray-600 leading-relaxed mb-6">
                   Milestone birthdays, exclusive dinners, and private parties curated with precision for an unforgettable VIP experience.
                 </p>
@@ -134,12 +134,41 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Featured Gallery */}
+      <section className="py-24 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold mb-6 text-white">Moments Captured</h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              A glimpse into some of our most breathtaking events.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="col-span-2 md:col-span-2 row-span-2 h-96">
+              <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80" alt="Event 1" className="w-full h-full object-cover rounded-xl shadow-lg hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+            <div className="h-48">
+              <img src="https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&q=80" alt="Event 2" className="w-full h-full object-cover rounded-xl shadow-lg hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+            <div className="h-48">
+              <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&q=80" alt="Event 3" className="w-full h-full object-cover rounded-xl shadow-lg hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+            <div className="h-48">
+              <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80" alt="Event 4" className="w-full h-full object-cover rounded-xl shadow-lg hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+            <div className="h-48">
+              <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&q=80" alt="Event 5" className="w-full h-full object-cover rounded-xl shadow-lg hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Why Choose Us */}
       <section className="py-24 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-4xl font-serif font-bold text-gray-900 mb-6">Why Partner With Us?</h2>
+              <h2 className="text-4xl font-heading font-bold text-gray-900 mb-6">Why Partner With Us?</h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                 We believe that the best events are the ones where you get to be a guest. We handle the stress, the logistics, and the countless details so you can focus on making memories.
               </p>
@@ -179,6 +208,48 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-24 bg-amber-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-6">What Our Clients Say</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Don't just take our word for it. Hear from those who have experienced the Elegance Events difference.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Sarah & James",
+                event: "Luxury Wedding",
+                text: "The team at Elegance Events completely exceeded our expectations. Every detail was perfect, allowing us to truly enjoy our special day without any stress."
+              },
+              {
+                name: "Michael Thompson",
+                event: "Corporate Gala",
+                text: "Professional, creative, and seamless execution. They transformed our annual gala into an unforgettable experience that our clients are still talking about."
+              },
+              {
+                name: "Emily Rodriguez",
+                event: "Private Celebration",
+                text: "From the initial concept to the final toast, their dedication and vision brought my dream party to life. Absolutely phenomenal service!"
+              }
+            ].map((testimonial, idx) => (
+              <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl relative mt-8 hover:-translate-y-2 transition-transform duration-300">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                  <Star className="h-6 w-6 fill-current" />
+                </div>
+                <p className="text-gray-600 italic leading-relaxed mt-6 mb-6">"{testimonial.text}"</p>
+                <div className="border-t border-gray-100 pt-4 mt-auto">
+                  <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
+                  <p className="text-sm text-amber-600 font-medium">{testimonial.event}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24 bg-gray-900 relative overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -186,7 +257,7 @@ const Home = () => {
           <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80" className="w-full h-full object-cover" alt="Crowd celebrating" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6">Let's Bring Your Vision to Life</h2>
+          <h2 className="text-4xl md:text-6xl font-heading font-bold text-white mb-6">Let's Bring Your Vision to Life</h2>
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Schedule a complimentary consultation with our senior event directors and discover how we can elevate your next occasion.
           </p>

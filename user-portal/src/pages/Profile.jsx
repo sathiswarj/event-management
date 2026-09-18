@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Phone, Shield, Bell, CheckCircle, Clock, XCircle, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { userAPI } from '../services/api';
 
 const Profile = () => {
     const { user, logout, setUser } = useAuth();
@@ -28,8 +28,7 @@ const Profile = () => {
     const handleProfileSubmit = async (e) => {
         e.preventDefault();
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.patch('/api/users/me', profileData, config);
+            const { data } = await userAPI.updateProfile(profileData);
             setUser({ ...user, ...data });
             setIsEditing(false);
             toast.success('Profile updated successfully');
@@ -45,8 +44,7 @@ const Profile = () => {
             return;
         }
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.post('/api/users/change-password', passwordData, config);
+            await userAPI.changePassword(passwordData);
             setIsChangingPassword(false);
             setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
             toast.success('Password changed successfully');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { requestAPI } from '../services/api';
 import { ArrowLeft, Calendar, FileText, CheckCircle, XCircle, Download, User, Mail, Phone, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -26,8 +26,7 @@ const RequestDetail = () => {
     useEffect(() => {
         const fetchRequest = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-                const { data } = await axios.get(`/api/requests/${id}`, config);
+                const { data } = await requestAPI.getById(id);
                 setRequest(data);
             } catch (error) {
                 console.error("Error fetching request detail", error);
@@ -48,9 +47,7 @@ const RequestDetail = () => {
     const handleAction = async (actionType) => {
         setActionLoading(true);
         try {
-            const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-            // POST to /api/requests/:id/accept or /reject
-            const { data } = await axios.post(`/api/requests/${id}/${actionType}`, {}, config);
+            const { data } = await requestAPI.updateAction(id, actionType);
             setRequest({ ...request, status: data.status });
             toast.success(`Request ${actionType === 'accept' ? 'Confirmed' : 'Rejected'} successfully`);
         } catch (error) {
@@ -192,15 +189,15 @@ const RequestDetail = () => {
                             <div className="space-y-3 bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
                                 <div className="flex items-start gap-3">
                                     <User className="w-4 h-4 text-slate-400 mt-0.5" />
-                                    <p className="text-sm text-slate-700">{request.customerName}</p>
+                                    <div className="font-medium text-gray-900">{request.user?.name}</div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <Mail className="w-4 h-4 text-slate-400 mt-0.5" />
-                                    <p className="text-sm text-slate-700">{request.customerEmail}</p>
+                                    <div className="font-medium text-gray-900">{request.user?.email}</div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <Phone className="w-4 h-4 text-slate-400 mt-0.5" />
-                                    <p className="text-sm text-slate-700">{request.customerPhone}</p>
+                                    <div className="font-medium text-gray-900">{request.user?.phone}</div>
                                 </div>
                             </div>
                         </div>

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { API_BASE_URL } from '../services/api';
+import { requestAPI } from '../services/api';
 
 const Track = () => {
   const { leadId } = useParams();
@@ -14,7 +13,7 @@ const Track = () => {
   useEffect(() => {
     const fetchLead = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/requests/${leadId}`);
+        const res = await requestAPI.getById(leadId);
         setLead(res.data);
       } catch (err) {
         console.error('Error fetching lead status:', err);

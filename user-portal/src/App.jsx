@@ -33,7 +33,7 @@ function App() {
               <Route path="/services" element={<Services />} />
               <Route path="/services/:id" element={<ServiceDetail />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/book" element={<BookNow />} />
+              <Route path="/book" element={<ProtectedRoute><BookNow /></ProtectedRoute>} />
               
               {/* Public Auth Routes */}
               <Route path="/login" element={<Login />} />

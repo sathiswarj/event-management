@@ -1,9 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Check, ArrowLeft, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { API_BASE_URL } from '../services/api';
+import { categoryAPI } from '../services/api';
 
 const ServiceDetail = () => {
   const { id } = useParams();
@@ -13,7 +10,7 @@ const ServiceDetail = () => {
   useEffect(() => {
     const fetchService = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/categories/${id}`);
+        const { data } = await categoryAPI.getById(id);
         setService(data);
       } catch (error) {
         console.error('Failed to fetch service', error);
@@ -44,23 +41,23 @@ const ServiceDetail = () => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="bg-white font-sans min-h-screen pb-24"
     >
       {/* Hero Section */}
       <div className="relative h-[60vh] md:h-[70vh] bg-slate-900">
         <div className="absolute inset-0">
-          <img 
-            src={service.img} 
-            alt={service.name} 
+          <img
+            src={service.img}
+            alt={service.name}
             className="w-full h-full object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
         </div>
-        
+
         <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-16">
           <Link to="/services" className="inline-flex items-center text-amber-400 hover:text-amber-300 mb-8 transition-colors text-sm font-medium uppercase tracking-widest w-fit">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -84,7 +81,7 @@ const ServiceDetail = () => {
       {/* Content Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 md:p-12 grid grid-cols-1 md:grid-cols-3 gap-12">
-          
+
           <div className="md:col-span-2 space-y-8">
             <div>
               <h2 className="text-3xl font-serif font-bold text-slate-800 mb-6">About This Service</h2>
@@ -92,7 +89,7 @@ const ServiceDetail = () => {
                 {service.longDesc}
               </p>
             </div>
-            
+
             <div className="bg-slate-50 rounded-xl p-8 border border-slate-100">
               <h3 className="text-2xl font-serif font-bold text-slate-800 mb-6">What's Included</h3>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
@@ -113,21 +110,21 @@ const ServiceDetail = () => {
               <p className="text-slate-600 mb-6">
                 Let our expert team handle every detail of your {service.name.toLowerCase()}.
               </p>
-              <Link 
-                to="/book" 
+              <Link
+                to="/book"
                 className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-medium transition-colors shadow-md"
               >
                 <Calendar className="w-5 h-5" />
                 Book Consultation
               </Link>
             </div>
-            
+
             <div className="bg-slate-50 rounded-2xl p-8 border border-slate-100 text-center">
               <p className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-2">Have Questions?</p>
               <p className="text-lg font-bold text-slate-800">Call Us: (555) 123-4567</p>
             </div>
           </div>
-          
+
         </div>
       </div>
     </motion.div>

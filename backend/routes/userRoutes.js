@@ -5,9 +5,10 @@ import {
     logoutUser, 
     getUserProfile, 
     updateUserProfile,
-    changePassword 
+    changePassword,
+    getAllUsers 
 } from '../controllers/userController.js';
-import { protectUser } from '../middleware/authMiddleware.js';
+import { protect, protectUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -22,5 +23,8 @@ router.route('/users/me')
     .patch(protectUser, updateUserProfile);
 
 router.post('/users/change-password', protectUser, changePassword);
+
+// Admin routes
+router.get('/users', protect, getAllUsers);
 
 export default router;

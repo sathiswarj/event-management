@@ -23,9 +23,9 @@ export const authAdmin = async (req, res, next) => {
         const admin = await Admin.findOne({ email });
 
         if (admin && (await admin.matchPassword(password))) {
-            generateToken(res, admin._id);
+            generateToken(res, admin.adminId);
             res.status(200).json({
-                _id: admin._id,
+                adminId: admin.adminId,
                 email: admin.email,
             });
         } else {
@@ -52,7 +52,7 @@ export const registerAdmin = async (req, res, next) => {
 
         const admin = await Admin.create({ name, email, phone, password });
         if (admin) {
-            res.status(201).json({ _id: admin._id, name: admin.name, email: admin.email, phone: admin.phone });
+            res.status(201).json({ adminId: admin.adminId, name: admin.name, email: admin.email, phone: admin.phone });
         } else {
             res.status(400);
             throw new Error('Invalid admin data');
@@ -85,7 +85,7 @@ export const logoutAdmin = async (req, res, next) => {
 export const getAdminProfile = async (req, res, next) => {
     try {
         const admin = {
-            _id: req.admin._id,
+            adminId: req.admin.adminId,
             email: req.admin.email,
         };
         res.status(200).json(admin);
@@ -112,7 +112,7 @@ export const getAllAdmins = async (req, res, next) => {
 export const changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const admin = await Admin.findById(req.admin._id);
+        const admin = await Admin.findOne({ adminId: req.admin.adminId });
 
         if (admin && (await admin.matchPassword(currentPassword))) {
             admin.password = newPassword;
@@ -142,7 +142,7 @@ export const updateAdmin = async (req, res, next) => {
 
             const updatedAdmin = await admin.save();
             res.status(200).json({
-                _id: updatedAdmin._id,
+                adminId: updatedAdmin.adminId,
                 name: updatedAdmin.name,
                 email: updatedAdmin.email,
                 phone: updatedAdmin.phone,

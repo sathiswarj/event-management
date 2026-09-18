@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { categoryAPI, requestAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { API_BASE_URL } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const BookNow = () => {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
+    categoryId: '',
     eventDate: ''
   });
   const [categories, setCategories] = useState([]);
@@ -20,10 +19,10 @@ const BookNow = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories?active=true`);
+        const res = await categoryAPI.getActive();
         setCategories(res.data);
         if (res.data.length > 0) {
-          setFormData((prev) => ({ ...prev, category: res.data[0]._id }));
+          setFormData((prev) => ({ ...prev, categoryId: res.data[0].categoryId }));
         }
       } catch (error) {
         toast.error('Failed to load categories');
@@ -43,11 +42,11 @@ const BookNow = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/requests`, formData);
+      await requestAPI.create(formData);
       toast.success('Your request has been successfully submitted! Our team will contact you shortly.');
-      setFormData({ title: '', description: '', category: categories[0]?._id || '', customerName: '', customerEmail: '', customerPhone: '', eventDate: '' });
+      setFormData({ title: '', description: '', categoryId: categories[0]?.categoryId || '', eventDate: '' });
     } catch (error) {
-      toast.error('Failed to submit request');
+      toast.error(error.response?.data?.message || 'Failed to submit request');
     } finally {
       setLoading(false);
     }
@@ -71,21 +70,6 @@ const BookNow = () => {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden p-10">
           <form onSubmit={onSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input type="text" name="customerName" required value={formData.customerName} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="John Doe" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input type="email" name="customerEmail" required value={formData.customerEmail} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="john@example.com" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <input type="tel" name="customerPhone" required value={formData.customerPhone} onChange={onChange} className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent" placeholder="+1 (555) 000-0000" />
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -100,9 +84,9 @@ const BookNow = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Event Category</label>
-              <select name="category" value={formData.category} onChange={onChange} required className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent">
+              <select name="categoryId" value={formData.categoryId} onChange={onChange} required className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-amber-500 transition-colors bg-transparent">
                 {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  <option key={cat.categoryId} value={cat.categoryId}>{cat.name}</option>
                 ))}
               </select>
             </div>

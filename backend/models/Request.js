@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 const requestSchema = new mongoose.Schema({
     requestId: {
         type: String,
+        required: true,
         default: uuidv4,
         unique: true
     },
@@ -28,41 +29,46 @@ const requestSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Please add an event date']
     },
-    customerName: {
-        type: String,
-        required: [true, 'Please add your name'],
-        trim: true
-    },
-    customerEmail: {
-        type: String,
-        required: [true, 'Please add your email'],
-
-    },
-    customerPhone: {
-        type: String,
-        required: [true, 'Please add a phone number']
-    },
-    telegramChatId: {
-        type: String,
-        trim: true
-    },
     status: {
         type: String,
-        enum: ['New', 'In Review', 'Approved', 'Rejected'],
-        default: 'New'
+        enum: ['Pending', 'Approved', 'Rejected', 'Confirmed', 'Date Conflict'],
+        default: 'Pending'
     },
     adminNotes: {
         type: String
+    },
+    dateConflict: {
+        type: Boolean,
+        default: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 }, {
     timestamps: true,
     toJSON: {
+        virtuals: true,
         transform: function (doc, ret) {
-            delete ret._id;
             delete ret.__v;
             return ret;
         }
-    }
+    },
+    toObject: { virtuals: true }
+});
+
+requestSchema.virtual('user', {
+    ref: 'User',
+    localField: 'userId',
+    foreignField: 'userId',
+    justOne: true
+});
+
+requestSchema.virtual('category', {
+    ref: 'Category',
+    localField: 'categoryId',
+    foreignField: 'categoryId',
+    justOne: true
 });
 
 const Request = mongoose.model('Request', requestSchema);

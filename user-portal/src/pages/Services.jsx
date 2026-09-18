@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
-import { API_BASE_URL } from '../services/api';
+import { categoryAPI } from '../services/api';
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -12,7 +11,7 @@ const Services = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/categories?active=true`);
+        const { data } = await categoryAPI.getActive();
         setServices(data);
       } catch (error) {
         console.error('Failed to fetch services', error);

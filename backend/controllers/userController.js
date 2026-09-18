@@ -164,3 +164,15 @@ export const changePassword = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+export const getAllUsers = async (req, res, next) => {
+    try {
+        const users = await User.find({}).select('-password').sort('-createdAt');
+        res.status(200).json(users);
+    } catch (error) {
+        next(error);
+    }
+};
