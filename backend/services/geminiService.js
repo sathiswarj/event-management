@@ -32,7 +32,7 @@ Return ONLY valid JSON in this exact shape without markdown fences:
         while (retries > 0) {
             try {
                 response = await ai.models.generateContent({
-                    model: 'gemini-3.8-flash',
+                    model: 'gemini-3.7-flash',
                     contents: prompt,
                     config: {
                         responseMimeType: "application/json"
@@ -49,7 +49,7 @@ Return ONLY valid JSON in this exact shape without markdown fences:
                 }
             }
         }
-        
+
         const rawText = response.text.trim();
         const jsonStr = rawText.replace(/^```json/i, '').replace(/```$/, '').trim();
         return JSON.parse(jsonStr);
@@ -86,8 +86,8 @@ export const generateEmbedding = async (text) => {
 export const generateRAGAnswer = async (question, contextRequests) => {
     try {
         const contextStr = JSON.stringify(contextRequests, null, 2);
-        
-        const prompt = contextRequests.length === 0 
+
+        const prompt = contextRequests.length === 0
             ? `You are an assistant helping an admin review event requests. The admin asked: "${question}".
 There were no matching requests found in the database. Respond naturally telling the admin that no matching requests were found for their query.`
             : `You are helping an admin review event requests. Based on this data:
@@ -100,7 +100,7 @@ Answer the admin's question clearly and specifically, mentioning requestId, cust
         while (retries > 0) {
             try {
                 response = await ai.models.generateContent({
-                    model: 'gemini-3.8-flash',
+                    model: 'gemini-3.7-flash',
                     contents: prompt,
                 });
                 break; // Success
@@ -114,7 +114,7 @@ Answer the admin's question clearly and specifically, mentioning requestId, cust
                 }
             }
         }
-        
+
         return response.text;
     } catch (error) {
         console.error('Error generating RAG answer:', error);

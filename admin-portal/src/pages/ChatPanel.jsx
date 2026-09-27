@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import chatService from '../services/chatService';
 import { Send, Bot, User } from 'lucide-react';
 import clsx from 'clsx';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const ChatPanel = () => {
   const [messages, setMessages] = useState([]);
@@ -94,14 +96,20 @@ const ChatPanel = () => {
             )}
             
             <div className={clsx(
-              "px-4 py-3 rounded-2xl whitespace-pre-wrap",
+              "px-4 py-3 rounded-2xl",
               msg.role === 'user' 
-                ? "bg-amber-600 text-white rounded-br-sm" 
+                ? "bg-amber-600 text-white rounded-br-sm whitespace-pre-wrap" 
                 : msg.isError 
-                  ? "bg-red-50 text-red-600 border border-red-100 rounded-bl-sm"
-                  : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm"
+                  ? "bg-red-50 text-red-600 border border-red-100 rounded-bl-sm whitespace-pre-wrap"
+                  : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm prose prose-sm prose-amber max-w-none prose-p:leading-relaxed prose-pre:bg-gray-100 prose-pre:text-gray-800"
             )}>
-              {msg.content}
+              {msg.role === 'assistant' && !msg.isError ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              ) : (
+                msg.content
+              )}
             </div>
             
             {msg.role === 'user' && (
