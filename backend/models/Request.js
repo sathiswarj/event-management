@@ -41,6 +41,10 @@ const requestSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    embedding: {
+        type: [Number],
+        select: false // Avoid returning this huge array by default
+    },
     createdAt: {
         type: Date,
         default: Date.now

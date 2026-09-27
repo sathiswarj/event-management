@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
@@ -39,6 +40,7 @@ app.use('/api/admin/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api', userRoutes);
+app.use('/api/admin/chat', chatRoutes);
 
 // Error Handling Middleware
 app.use(notFound);

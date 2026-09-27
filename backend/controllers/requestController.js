@@ -1,5 +1,6 @@
 import Request from '../models/Request.js';
 import axios from 'axios';
+import { generateEmbedding } from '../services/geminiService.js';
 
 // Helper to mark overlapping requests as Date Conflict
 const handleDateConflicts = async (eventDate, approvedRequestId) => {
@@ -50,7 +51,16 @@ export const createRequest = async (req, res, next) => {
         const randomDigits = Math.floor(1000 + Math.random() * 9000);
         const requestId = `REQ-${yyyy}${mm}${dd}-${randomDigits}`;
 
-        // 3. Save the new request to MongoDB immediately
+        // 3. Generate Embedding
+        let embedding = [];
+        try {
+            const textToEmbed = `Title: ${title}. Description: ${description}. Category ID: ${categoryId}. Date: ${eventDate}`;
+            embedding = await generateEmbedding(textToEmbed);
+        } catch (err) {
+            console.error('Failed to generate embedding during request creation:', err);
+        }
+
+        // 4. Save the new request to MongoDB immediately
         const request = await Request.create({
             requestId,
             title,
@@ -59,7 +69,8 @@ export const createRequest = async (req, res, next) => {
             eventDate,
             status,
             dateConflict: hasConflict,
-            userId: req.user ? req.user.userId : null
+            userId: req.user ? req.user.userId : null,
+            embedding: embedding.length > 0 ? embedding : undefined
         });
 
         // 4 & 5. Send webhook in a try/catch
