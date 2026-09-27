@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Inbox, Users, Settings, Tags, Calendar, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Inbox, Users, Settings, Tags, Calendar, UserPlus, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = () => {
@@ -10,6 +10,7 @@ const Sidebar = () => {
     { name: 'Customers', path: '/customers', icon: Users },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
     { name: 'Internal Users', path: '/accounts', icon: UserPlus },
+    { name: 'AI Chat', path: '/chat', icon: MessageSquare },
   ];
 
   return (

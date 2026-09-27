@@ -11,6 +11,7 @@ import Accounts from './pages/Accounts';
 import ChangePassword from './pages/ChangePassword';
 import Customers from './pages/Customers';
 import CalendarView from './pages/CalendarView';
+import ChatPanel from './pages/ChatPanel';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,6 +43,7 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/chat" element={<ChatPanel />} />
             <Route path="/settings" element={<ChangePassword />} />
           </Route>
         </Route>
