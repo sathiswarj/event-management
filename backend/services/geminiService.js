@@ -32,7 +32,7 @@ Return ONLY valid JSON in this exact shape without markdown fences:
         while (retries > 0) {
             try {
                 response = await ai.models.generateContent({
-                    model: 'gemini-3.7-flash',
+                    model: 'gemini-3.8-flash',
                     contents: prompt,
                     config: {
                         responseMimeType: "application/json"
@@ -100,7 +100,7 @@ Answer the admin's question clearly and specifically, mentioning requestId, cust
         while (retries > 0) {
             try {
                 response = await ai.models.generateContent({
-                    model: 'gemini-3.7-flash',
+                    model: 'gemini-3.8-flash',
                     contents: prompt,
                 });
                 break; // Success
