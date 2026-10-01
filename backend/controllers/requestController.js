@@ -68,6 +68,7 @@ export const createRequest = async (req, res, next) => {
             categoryId,
             eventDate,
             status,
+            statusHistory: [{ status, updatedAt: new Date() }],
             dateConflict: hasConflict,
             userId: req.user ? req.user.userId : null,
             embedding: embedding.length > 0 ? embedding : undefined
@@ -80,7 +81,7 @@ export const createRequest = async (req, res, next) => {
                 // Populate user details so we can send them to the webhook without needing them in req.body
                 await request.populate('category', 'name');
                 await request.populate('user', 'name email phone');
-                
+
                 const payload = {
                     requestId,
                     customerName: request.user ? request.user.name : null,
@@ -92,7 +93,7 @@ export const createRequest = async (req, res, next) => {
                     description,
                     dateConflict: hasConflict
                 };
-                
+
                 await axios.post(webhookUrl, payload);
             }
         } catch (webhookError) {
@@ -162,13 +163,21 @@ export const updateRequest = async (req, res, next) => {
     try {
         const { status, adminNotes } = req.body;
 
-        const updateData = {};
-        if (status) updateData.status = status;
-        if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+        const updateQuery = { $set: {} };
+        if (status) {
+            updateQuery.$set.status = status;
+            updateQuery.$push = {
+                statusHistory: {
+                    status: status,
+                    updatedAt: new Date()
+                }
+            };
+        }
+        if (adminNotes !== undefined) updateQuery.$set.adminNotes = adminNotes;
 
         const updatedRequest = await Request.findByIdAndUpdate(
             req.params.id,
-            { $set: updateData },
+            updateQuery,
             { new: true }
         );
 
@@ -185,6 +194,7 @@ export const updateRequest = async (req, res, next) => {
                     if (statusWebhookUrl) {
                         await updatedRequest.populate('user', 'name email phone telegramChatId');
                         const payload = {
+                            type: 'status_update',
                             requestId: updatedRequest.requestId || updatedRequest._id,
                             customerName: updatedRequest.user ? updatedRequest.user.name : null,
                             customerEmail: updatedRequest.user ? updatedRequest.user.email : null,
@@ -210,18 +220,103 @@ export const updateRequest = async (req, res, next) => {
     }
 };
 
-// @desc    Accept quotation
+// @desc    Admin sends a quotation PDF
+// @route   POST /api/requests/:id/send-quotation
+// @access  Private (Admin only)
+export const sendQuotation = async (req, res, next) => {
+    try {
+        const request = await Request.findById(req.params.id).populate('user', 'name email telegramChatId');
+        if (!request) {
+            res.status(404);
+            throw new Error('Request not found');
+        }
+
+        if (!req.file) {
+            res.status(400);
+            throw new Error('Please upload a PDF quotation file');
+        }
+
+        // Just use local path for now, frontend will serve it from /uploads
+        const quotationUrl = `/uploads/${req.file.filename}`;
+
+        request.quotationUrl = quotationUrl;
+
+        // Ensure array exists for older documents
+        if (!request.quotationHistory) {
+            request.quotationHistory = [];
+        }
+
+        request.quotationHistory.push({
+            url: quotationUrl,
+            uploadedAt: new Date(),
+            version: request.quotationHistory.length + 1
+        });
+        request.status = 'Quotation Sent';
+        request.statusHistory.push({ status: 'Quotation Sent', updatedAt: new Date() });
+
+        await request.save();
+
+        // Notify user via webhook
+        try {
+            const webhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
+            if (webhookUrl) {
+                // Construct absolute URL so N8N can fetch the PDF
+                const absoluteQuotationUrl = `http://localhost:5000${quotationUrl}`;
+
+                await axios.post(webhookUrl, {
+                    type: 'quotation_ready',
+                    requestId: request.requestId || request._id,
+                    customerName: request.user?.name,
+                    customerEmail: request.user?.email,
+                    title: request.title,
+                    quotationUrl: absoluteQuotationUrl,
+                    status: 'Quotation Sent'
+                });
+            }
+        } catch (webhookError) {
+            console.error('Webhook error on send quotation:', webhookError.message);
+        }
+
+        res.status(200).json(request);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Accept quotation / approved request
 // @route   POST /api/requests/:id/accept
-// @access  Private
+// @access  Private (User)
 export const acceptRequest = async (req, res, next) => {
     try {
-        const request = await Request.findOne({ requestId: req.params.id, userId: req.user.userId });
-        if (request && request.status === 'Quotation Sent') {
-            request.status = 'Confirmed';
-            await request.save();
+        const id = req.params.id;
+        const query = id.match(/^[0-9a-fA-F]{24}$/)
+            ? { $or: [{ _id: id }, { requestId: id }], userId: req.user.userId }
+            : { requestId: id, userId: req.user.userId };
+        const request = await Request.findOne(query);
 
-            // Mark overlapping pending events as Date Conflict
+        if (request && ['Quotation Sent', 'Approved', 'Pending Response'].includes(request.status)) {
+            request.status = 'Confirmed';
+            request.statusHistory.push({ status: 'Confirmed', updatedAt: new Date() });
+            await request.save();
             await handleDateConflicts(request.eventDate, request._id);
+
+            // Notify admin via webhook
+            try {
+                const webhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
+                if (webhookUrl) {
+                    await request.populate('user', 'name email telegramChatId');
+                    await axios.post(webhookUrl, {
+                        type: 'user_accepted',
+                        requestId: request.requestId || request._id,
+                        customerName: request.user?.name,
+                        title: request.title,
+                        eventDate: request.eventDate,
+                        status: 'Confirmed'
+                    });
+                }
+            } catch (webhookError) {
+                console.error('Webhook error on accept:', webhookError.message);
+            }
 
             res.status(200).json(request);
         } else {
@@ -235,13 +330,38 @@ export const acceptRequest = async (req, res, next) => {
 
 // @desc    Reject quotation
 // @route   POST /api/requests/:id/reject
-// @access  Private
+// @access  Private (User)
 export const rejectRequest = async (req, res, next) => {
     try {
-        const request = await Request.findOne({ requestId: req.params.id, userId: req.user.userId });
-        if (request && request.status === 'Quotation Sent') {
+        const id = req.params.id;
+        const query = id.match(/^[0-9a-fA-F]{24}$/)
+            ? { $or: [{ _id: id }, { requestId: id }], userId: req.user.userId }
+            : { requestId: id, userId: req.user.userId };
+        const request = await Request.findOne(query);
+
+        if (request && ['Quotation Sent', 'Approved', 'Pending Response'].includes(request.status)) {
             request.status = 'Rejected';
+            request.statusHistory.push({ status: 'Rejected', updatedAt: new Date() });
             await request.save();
+
+            // Notify admin via webhook
+            try {
+                const webhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
+                if (webhookUrl) {
+                    await request.populate('user', 'name email telegramChatId');
+                    await axios.post(webhookUrl, {
+                        type: 'user_rejected',
+                        requestId: request.requestId || request._id,
+                        customerName: request.user?.name,
+                        title: request.title,
+                        eventDate: request.eventDate,
+                        status: 'Rejected'
+                    });
+                }
+            } catch (webhookError) {
+                console.error('Webhook error on reject:', webhookError.message);
+            }
+
             res.status(200).json(request);
         } else {
             res.status(404);
@@ -251,6 +371,106 @@ export const rejectRequest = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    User sends a negotiation message
+// @route   POST /api/requests/:id/negotiate
+// @access  Private (User)
+export const negotiateRequest = async (req, res, next) => {
+    try {
+        const { message } = req.body;
+        if (!message || !message.trim()) {
+            res.status(400);
+            throw new Error('Message is required');
+        }
+
+        const id = req.params.id;
+        const query = id.match(/^[0-9a-fA-F]{24}$/)
+            ? { $or: [{ _id: id }, { requestId: id }], userId: req.user.userId }
+            : { requestId: id, userId: req.user.userId };
+        const request = await Request.findOne(query);
+
+        if (!request) {
+            res.status(404);
+            throw new Error('Request not found');
+        }
+
+        request.negotiationMessages.push({ sender: 'user', message: message.trim(), timestamp: new Date() });
+        request.status = 'Negotiation Requested';
+        request.statusHistory.push({ status: 'Negotiation Requested', updatedAt: new Date() });
+        await request.save();
+
+        // Notify admin via webhook
+        try {
+            const webhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
+            if (webhookUrl) {
+                await request.populate('user', 'name email telegramChatId');
+                await axios.post(webhookUrl, {
+                    type: 'negotiation_message',
+                    requestId: request.requestId || request._id,
+                    customerName: request.user?.name,
+                    customerEmail: request.user?.email,
+                    title: request.title,
+                    negotiationMessage: message.trim(),
+                    status: 'Negotiation Requested'
+                });
+            }
+        } catch (webhookError) {
+            console.error('Webhook error on negotiate:', webhookError.message);
+        }
+
+        res.status(200).json(request);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Admin sends a reply in the negotiation thread
+// @route   POST /api/requests/:id/admin-reply
+// @access  Private (Admin only)
+export const adminReplyRequest = async (req, res, next) => {
+    try {
+        const { message } = req.body;
+        if (!message || !message.trim()) {
+            res.status(400);
+            throw new Error('Message is required');
+        }
+
+        const request = await Request.findById(req.params.id).populate('user', 'name email telegramChatId');
+        if (!request) {
+            res.status(404);
+            throw new Error('Request not found');
+        }
+
+        request.negotiationMessages.push({ sender: 'admin', message: message.trim(), timestamp: new Date() });
+        request.status = 'Pending Response';
+        request.statusHistory.push({ status: 'Pending Response', updatedAt: new Date() });
+        await request.save();
+
+        // Notify user via webhook
+        try {
+            const webhookUrl = process.env.N8N_TELEGRAM_WEBHOOK;
+            if (webhookUrl) {
+                await axios.post(webhookUrl, {
+                    type: 'admin_negotiation_reply',
+                    requestId: request.requestId || request._id,
+                    customerName: request.user?.name,
+                    customerEmail: request.user?.email,
+                    telegramChatId: request.user?.telegramChatId,
+                    title: request.title,
+                    adminMessage: message.trim(),
+                    status: 'Pending Response'
+                });
+            }
+        } catch (webhookError) {
+            console.error('Webhook error on admin reply:', webhookError.message);
+        }
+
+        res.status(200).json(request);
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 // @desc    Delete request
 // @route   DELETE /api/requests/:id

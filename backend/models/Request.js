@@ -31,12 +31,27 @@ const requestSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'Rejected', 'Confirmed', 'Date Conflict'],
+        enum: ['Pending', 'Approved', 'Rejected', 'Confirmed', 'Date Conflict', 'Negotiation Requested', 'Pending Response', 'Quotation Sent'],
         default: 'Pending'
     },
     adminNotes: {
         type: String
     },
+    negotiationMessages: [
+        {
+            sender: { type: String, enum: ['user', 'admin'], required: true },
+            message: { type: String, required: true },
+            timestamp: { type: Date, default: Date.now }
+        }
+    ],
+    quotationUrl: { type: String },
+    quotationHistory: [
+        {
+            url: { type: String, required: true },
+            uploadedAt: { type: Date, default: Date.now },
+            version: { type: Number, required: true }
+        }
+    ],
     dateConflict: {
         type: Boolean,
         default: false
@@ -45,6 +60,10 @@ const requestSchema = new mongoose.Schema({
         type: [Number],
         select: false // Avoid returning this huge array by default
     },
+    statusHistory: [{
+        status: { type: String, required: true },
+        updatedAt: { type: Date, default: Date.now }
+    }],
     createdAt: {
         type: Date,
         default: Date.now

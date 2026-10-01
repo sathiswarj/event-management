@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://localhost:5000/api';
+export const BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = `${BASE_URL}/api`;
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -32,6 +33,7 @@ export const requestAPI = {
     getMyRequests: () => api.get('/requests/my'),
     getById: (id) => api.get(`/requests/${id}`),
     updateAction: (id, actionType) => api.post(`/requests/${id}/${actionType}`),
+    negotiate: (id, message) => api.post(`/requests/${id}/negotiate`, { message }),
 };
 
 export const categoryAPI = {

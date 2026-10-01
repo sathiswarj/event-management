@@ -12,6 +12,7 @@ import Contact from './pages/Contact';
 import BookNow from './pages/BookNow';
 import Track from './pages/Track';
 import TrackSearch from './pages/TrackSearch';
+import ScrollToTop from './components/ScrollToTop';
 
 // New Pages
 import Login from './pages/Login';
@@ -25,6 +26,7 @@ function App() {
     <div className="flex flex-col min-h-screen">
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <Navbar />
           <main className="flex-grow">
             <Routes>

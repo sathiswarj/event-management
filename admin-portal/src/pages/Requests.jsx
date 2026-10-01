@@ -2,396 +2,211 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Search, Filter, MoreVertical, X, Check, XCircle, Copy, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MessageSquare, Loader2, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '../services/api';
 
+const STATUS_CONFIG = {
+  'Pending':               { label: 'Pending',               color: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
+  'In Review':             { label: 'In Review',             color: 'bg-blue-100 text-blue-800 border-blue-200',   dot: 'bg-blue-500' },
+  'Quotation Sent':        { label: 'Quotation Sent',        color: 'bg-indigo-100 text-indigo-800 border-indigo-200', dot: 'bg-indigo-500' },
+  'Approved':              { label: 'Approved',              color: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' },
+  'Confirmed':             { label: 'Confirmed',             color: 'bg-teal-100 text-teal-800 border-teal-200',   dot: 'bg-teal-500' },
+  'Rejected':              { label: 'Rejected',              color: 'bg-red-100 text-red-800 border-red-200',       dot: 'bg-red-500' },
+  'Date Conflict':         { label: 'Date Conflict',         color: 'bg-orange-100 text-orange-800 border-orange-200', dot: 'bg-orange-500' },
+  'Negotiation Requested': { label: 'Negotiation',           color: 'bg-purple-100 text-purple-800 border-purple-200', dot: 'bg-purple-500' },
+  'Pending Response':      { label: 'Pending Response',      color: 'bg-indigo-100 text-indigo-800 border-indigo-200', dot: 'bg-indigo-500' },
+};
+
+const getStatusCfg = (status) => STATUS_CONFIG[status] || { label: status, color: 'bg-gray-100 text-gray-800 border-gray-200', dot: 'bg-gray-400' };
+
+const StatusBadge = ({ status, pulse = false }) => {
+  const cfg = getStatusCfg(status);
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${pulse ? 'animate-pulse' : ''}`} />
+      {cfg.label}
+    </span>
+  );
+};
+
 const Requests = () => {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  // Action Modal State
-  const [actionModal, setActionModal] = useState({ show: false, request: null, status: '', message: '' });
-  const [isUpdating, setIsUpdating] = useState(false);
+  const navigate = useNavigate();
+  const [requests, setRequests]           = useState([]);
+  const [filtered, setFiltered]           = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [activeFilter, setActiveFilter]   = useState('All');
+  const [searchQuery, setSearchQuery]     = useState('');
+
+  const FILTER_TABS = ['All', 'Pending', 'In Review', 'Quotation Sent', 'Negotiation', 'Approved', 'Confirmed', 'Rejected', 'Date Conflict'];
+
+  useEffect(() => { 
+    fetchRequests(); 
+    const interval = setInterval(fetchRequests, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    let result = [...requests];
+    if (activeFilter !== 'All') {
+      if (activeFilter === 'Negotiation') {
+        result = result.filter(r => r.status === 'Negotiation Requested' || r.status === 'Pending Response');
+      } else {
+        result = result.filter(r => r.status === activeFilter);
+      }
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r =>
+        r.title?.toLowerCase().includes(q) ||
+        r.requestId?.toLowerCase().includes(q) ||
+        r.user?.name?.toLowerCase().includes(q)
+      );
+    }
+    setFiltered(result);
+  }, [requests, activeFilter, searchQuery]);
 
   const fetchRequests = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/requests`, { withCredentials: true });
-      setRequests(res.data);
+      const sorted = res.data.sort((a, b) => {
+        const priority = ['Negotiation Requested', 'Pending Response'];
+        const ap = priority.includes(a.status) ? 0 : 1;
+        const bp = priority.includes(b.status) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      setRequests(sorted);
     } catch (error) {
-      console.error('Failed to fetch requests', error);
+      toast.error('Failed to load requests');
     } finally {
       setLoading(false);
     }
   };
 
-  const confirmAction = (req, status) => {
-    setActionModal({ show: true, request: req, status, message: '' });
-  };
-
-  const submitUpdateStatus = async () => {
-    setIsUpdating(true);
-    try {
-      await axios.put(`${API_BASE_URL}/requests/${actionModal.request._id}`, { 
-        status: actionModal.status, 
-        adminNotes: actionModal.message 
-      }, { withCredentials: true });
-      
-      toast.success(`Request ${actionModal.status} successfully`);
-      setActionModal({ show: false, request: null, status: '', message: '' });
-      setSelectedRequest(null);
-      fetchRequests();
-    } catch (error) {
-      console.error('Failed to update status', error);
-      toast.error('Failed to update request');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const updateStatusSimple = async (id, status) => {
-    try {
-      await axios.put(`${API_BASE_URL}/requests/${id}`, { status }, { withCredentials: true });
-      toast.success(`Status updated to ${status}`);
-      setSelectedRequest(null);
-      fetchRequests();
-    } catch (error) {
-      toast.error('Failed to update request');
-    }
-  };
-
-  const getAdminLabel = (status) => {
-    switch (status) {
-      case 'New': return 'New Inquiry';
-      case 'In Review': return 'Curatorial Review';
-      case 'Approved': return 'Allocate & Approve';
-      case 'Rejected': return 'Date Unavailable';
-      case 'Date Conflict': return 'Conflict Alert';
-      default: return status;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'New': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'In Review': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Approved': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
-      case 'Date Conflict': return 'bg-orange-100 text-orange-800 border-orange-200 animate-pulse';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  const negotiationCount = requests.filter(r => r.status === 'Negotiation Requested' || r.status === 'Pending Response').length;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl font-serif font-bold text-gray-900">Request Management</h1>
           <p className="text-gray-500 mt-1">Review and manage all incoming event requests.</p>
         </div>
+        {negotiationCount > 0 && (
+          <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-800 text-sm font-semibold px-4 py-2 rounded-xl">
+            <MessageSquare className="w-4 h-4" />
+            {negotiationCount} negotiation{negotiationCount > 1 ? 's' : ''} pending
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-          <div className="relative w-72">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input 
-              type="text" 
-              placeholder="Search requests..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-            />
+        <div className="p-4 border-b border-gray-200 bg-gray-50/50 space-y-3">
+          <div className="flex justify-between items-center gap-3">
+            <div className="relative w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by title, ID or client..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+              />
+            </div>
           </div>
-          <button className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-200 px-4 py-2 rounded-lg shadow-sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            {FILTER_TABS.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveFilter(tab)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  activeFilter === tab
+                    ? tab === 'Negotiation'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-amber-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-amber-400'
+                }`}
+              >
+                {tab}
+                {tab === 'Negotiation' && negotiationCount > 0 && (
+                  <span className="ml-1.5 bg-purple-200 text-purple-800 rounded-full px-1.5 py-0.5 text-[10px]">
+                    {negotiationCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-gray-500 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Request ID</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Event Title</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Client</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Event Date</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Date Submitted</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Request ID</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Event</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Client</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Category</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Event Date</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Status</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right">View</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">Loading requests...</td>
-                </tr>
-              ) : requests.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">No requests found.</td>
-                </tr>
+                <tr><td colSpan="7" className="px-6 py-16 text-center text-gray-400">
+                  <Loader2 className="w-6 h-6 mx-auto animate-spin mb-2" />Loading...
+                </td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan="7" className="px-6 py-16 text-center text-gray-400">No requests found.</td></tr>
               ) : (
-                requests.map((req) => (
-                  <tr key={req._id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => { setSelectedRequest(req); setIsDropdownOpen(false); }}>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      <div className="flex items-center space-x-2">
-                        <span>{req.requestId || req._id.substring(0, 8)}</span>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(req.requestId || req._id.substring(0, 8)); toast.success('ID copied to clipboard'); }}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                          title="Copy ID"
-                        >
-                          <Copy className="w-4 h-4" />
+                filtered.map((req) => {
+                  const isNegotiation = req.status === 'Negotiation Requested' || req.status === 'Pending Response';
+                  return (
+                    <tr
+                      key={req._id}
+                      onClick={() => navigate(`/requests/${req._id}`)}
+                      className={`hover:bg-gray-50/70 transition-colors cursor-pointer ${isNegotiation ? 'bg-purple-50/40' : ''}`}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-gray-600">{(req.requestId || req._id).substring(0, 12)}…</span>
+                          <button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(req.requestId || req._id); toast.success('Copied!'); }}>
+                            <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          {isNegotiation && <MessageSquare className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />}
+                          {req.title}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">{req.user?.name || '—'}</div>
+                        <div className="text-xs text-gray-400">{req.user?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">{req.category?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-gray-900 font-medium text-sm">
+                        {req.eventDate ? format(new Date(req.eventDate), 'MMM dd, yyyy') : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={req.status} pulse={req.status === 'Negotiation Requested'} />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline">
+                          View →
                         </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{req.title}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <div>{req.user?.name}</div>
-                      <div className="text-xs text-gray-400">{req.user?.email}</div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{req.category?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-900 font-medium">
-                      {req.eventDate ? format(new Date(req.eventDate), 'MMM dd, yyyy') : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {format(new Date(req.createdAt), 'MMM dd, yyyy')}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(req.status)}`}>
-                        {getAdminLabel(req.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors" onClick={(e) => { e.stopPropagation(); setSelectedRequest(req); }}>
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* Slide-out Drawer */}
-      {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onClick={() => setSelectedRequest(null)} />
-          <motion.div 
-            initial={{ x: '100%' }} 
-            animate={{ x: 0 }} 
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col"
-          >
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-serif font-bold text-gray-900">Request Details</h2>
-              <button onClick={() => setSelectedRequest(null)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 flex-1 overflow-y-auto">
-              <div className="mb-6 flex justify-between items-start">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedRequest.title}</h3>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <p className="text-sm font-medium text-gray-500">ID: {selectedRequest.requestId || selectedRequest._id}</p>
-                    <button 
-                      onClick={() => { navigator.clipboard.writeText(selectedRequest.requestId || selectedRequest._id); toast.success('ID copied to clipboard'); }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                      title="Copy ID"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border inline-block ${getStatusColor(selectedRequest.status)}`}>
-                    {getAdminLabel(selectedRequest.status)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Client Information</h4>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-gray-900">{selectedRequest.user?.name}</p>
-                      <p className="text-gray-600 text-sm mt-1">{selectedRequest.user?.email}</p>
-                    </div>
-                    {selectedRequest.user?.phone && (
-                      <div className="text-right">
-                        <p className="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">Phone</p>
-                        <p className="text-gray-900 font-medium text-sm">{selectedRequest.user?.phone}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Event Category</h4>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p className="font-medium text-gray-900">{selectedRequest.category?.name || 'N/A'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Event Date & Time</h4>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p className="font-medium text-gray-900">{selectedRequest.eventDate ? format(new Date(selectedRequest.eventDate), 'MMMM dd, yyyy - h:mm a') : 'Not Specified'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Event Vision / Description</h4>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{selectedRequest.description}</p>
-                  </div>
-                </div>
-
-                {selectedRequest.adminNotes && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Admin Feedback</h4>
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                      <p className="text-amber-900 text-sm italic">{selectedRequest.adminNotes}</p>
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Submission Date</h4>
-                  <p className="text-gray-900 font-medium">{format(new Date(selectedRequest.createdAt), 'MMMM dd, yyyy - h:mm a')}</p>
-                </div>
-
-                {selectedRequest.updatedAt && selectedRequest.updatedAt !== selectedRequest.createdAt && (
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Last Updated</h4>
-                    <p className="text-gray-900 font-medium">{format(new Date(selectedRequest.updatedAt), 'MMMM dd, yyyy - h:mm a')}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {selectedRequest.status !== 'Rejected' && (
-              <div className="p-6 border-t border-gray-100 bg-gray-50 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Update Status</p>
-                <div className="flex items-start space-x-3">
-                  <div className="relative flex-1">
-                    <button 
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className={`w-full flex items-center justify-between bg-white border text-gray-900 font-medium rounded-xl p-3 shadow-sm outline-none transition-all ${isDropdownOpen ? 'border-amber-400 ring-2 ring-amber-500/20' : 'border-gray-300 hover:border-amber-400'}`}
-                    >
-                      <span>{selectedRequest.status}</span>
-                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-amber-500' : ''}`} />
-                    </button>
-                    
-                    {isDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-20">
-                        {['New', 'In Review', 'Approved'].map(statusOption => (
-                          <button
-                            key={statusOption}
-                            onClick={() => {
-                              setIsDropdownOpen(false);
-                              if (statusOption === selectedRequest.status) return;
-                              if (statusOption === 'Approved') {
-                                confirmAction(selectedRequest, 'Approved');
-                              } else {
-                                updateStatusSimple(selectedRequest._id, statusOption);
-                              }
-                            }}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center ${
-                              selectedRequest.status === statusOption 
-                                ? 'bg-amber-50 text-amber-700' 
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-amber-600'
-                            }`}
-                          >
-                            {selectedRequest.status === statusOption && <Check className="w-4 h-4 mr-2" />}
-                            <span className={selectedRequest.status === statusOption ? '' : 'ml-6'}>{statusOption}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <button 
-                    onClick={() => confirmAction(selectedRequest, 'Rejected')}
-                    disabled={selectedRequest.status === 'New'}
-                    title={selectedRequest.status === 'New' ? "Cannot reject a New request directly. Move to In Review first." : ""}
-                    className={`flex items-center justify-center px-5 py-3 border rounded-xl font-bold transition-colors shadow-sm shrink-0 ${
-                      selectedRequest.status === 'New'
-                        ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : 'bg-white border-gray-200 text-red-600 hover:bg-red-50'
-                    }`}
-                  >
-                    <XCircle className="w-5 h-5 mr-2" />
-                    Reject
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
-
-      {/* Action Message Modal */}
-      {actionModal.show && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setActionModal({ ...actionModal, show: false })} />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                Confirm {actionModal.status}
-              </h3>
-              <button onClick={() => setActionModal({ ...actionModal, show: false })} className="text-gray-400 hover:text-gray-900">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <p className="text-gray-600 text-sm mb-4">
-              You are about to mark this request as <strong className="text-gray-900">{actionModal.status}</strong>. 
-              Would you like to include an internal note or a message?
-            </p>
-
-            <textarea
-              rows="4"
-              placeholder={`Enter reason for ${actionModal.status.toLowerCase()}... (Optional)`}
-              value={actionModal.message}
-              onChange={(e) => setActionModal({ ...actionModal, message: e.target.value })}
-              className="w-full p-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-500 outline-none text-sm resize-none mb-6"
-            ></textarea>
-
-            <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setActionModal({ ...actionModal, show: false })}
-                className="px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={submitUpdateStatus}
-                disabled={isUpdating}
-                className={`px-4 py-2 font-bold text-white rounded-lg transition-colors shadow-sm ${
-                  actionModal.status === 'Approved' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                {isUpdating ? 'Saving...' : `Confirm ${actionModal.status}`}
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </motion.div>
   );
 };

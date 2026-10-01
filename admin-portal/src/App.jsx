@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Requests from './pages/Requests';
+import RequestDetail from './pages/RequestDetail';
 import Categories from './pages/Categories';
 import Accounts from './pages/Accounts';
 import ChangePassword from './pages/ChangePassword';
@@ -39,6 +40,7 @@ function App() {
           <Route element={<Layout setIsAuthenticated={setIsAuthenticated} />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/requests" element={<Requests />} />
+            <Route path="/requests/:id" element={<RequestDetail />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/customers" element={<Customers />} />
